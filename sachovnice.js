@@ -1444,7 +1444,7 @@ window.onload = function () {
         const lastItemArray = lastItem.split(" ");
         if (lastItemArray[0] === oppositeColorMark && possiblePieceTypes.includes(lastItemArray[1])) {
             possibleMovesDuringPin.push(...kingMovesInDirection);
-            possibleMovesDuringPin = possibleMovesDuringPin.filter(item => !(item[0] === piecesRow && item[1] === piecesCol));
+            possibleMovesDuringPin = possibleMovesDuringPin.filter(item => !(item[0] === piecesRow && item[1] === piecesCol));// remove the piece itself
             return possibleMovesDuringPin;
         }
         return null;
