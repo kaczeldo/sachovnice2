@@ -1,127 +1,18 @@
+import * as MoveUtils from "./utils/moveUtils.js";
+import * as PieceUtils from "./utils/getPiecesUtils.js";
+import { Coordinates } from "./classes/coordinates.js";
+import { Piece } from "./classes/piece.js";
+import { Game } from "./classes/game.js";
+
 window.onload = function () {
     // needed variables
     const statusBarPar = document.getElementById("status-bar").firstElementChild;
     const boardRows = document.getElementsByClassName("board-row");
     let domPiecesToPlay = []; // in this array will be the DOM elements
-    class Coordinates {
-        constructor(x, y) {
-            this.x = x;// 0 - 7 for chess board columns
-            this.y = y;// 0 - 7 for rows
-        }
-
-        equals(other) {
-            return this.x === other.x && this.y === other.y;
-        }
-
-        toString() {
-            return String.fromCharCode(97 + this.x) + (8 - this.y);
-        }
-
-        change(x, y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        toIndex() {
-            return [this.y, this.x];
-        }
-    }
-
-    class Piece {
-        constructor(color, type, coordinates) {
-            this.color = color;
-            this.type = type;
-            this.coordinates = coordinates;
-
-            // static stuff - initial values 
-            this.wasTaken = false;
-            this.hasMoved = false;
-            this.hasDoubleJumped = false;
-        }
-    }
-
-    class Game {
-        constructor() {
-            this.isWhitesTurn = true;
-            this.gameOver = false;
-            this.pieces = [];
-            this.chessBoard = [];
-            this.isCheck = false;
-            this.isDoubleCheck = false;
-
-            this.setupInitialPosition();
-            this.setupChessBoard();
-        }
-
-        setupChessBoard() {
-            // fill the chess board with empty squares -> "s"
-            for (let i = 0; i < 8; i++) {
-                this.chessBoard.push([]);
-                for (let j = 0; j < 8; j++) {
-                    this.chessBoard[i].push("s");
-                }
-            }
-
-            // go through all pieces
-            for (let piece of this.pieces) {
-                const pieceIndexes = piece.toIndex();
-                const symbol = getSymbolForPiece(piece);
-                this.chessBoard[pieceIndexes[0]][pieceIndexes[1]] = symbol;
-            }
-        }
-
-        setupInitialPosition() {
-            // helper for clarity
-            const add = (color, type, x, y) =>
-                this.pieces.push(new Piece(color, type, new Coordinates(x, y)));
-
-            // pawns
-            for (let x = 0; x < 8; x++) {
-                add("white", "pawn", x, 6);
-                add("black", "pawn", x, 1);
-            }
-
-            // rooks
-            add("white", "rook", 0, 7);
-            add("white", "rook", 7, 7);
-            add("black", "rook", 0, 0);
-            add("black", "rook", 7, 0);
-
-            // knights
-            add("white", "knight", 1, 7);
-            add("white", "knight", 6, 7);
-            add("black", "knight", 1, 0);
-            add("black", "knight", 6, 0);
-
-            // bishops
-            add("white", "bishop", 2, 7);
-            add("white", "bishop", 5, 7);
-            add("black", "bishop", 2, 0);
-            add("black", "bishop", 5, 0);
-
-            // queens
-            add("white", "queen", 3, 7);
-            add("black", "queen", 3, 0);
-
-            // kings
-            add("white", "king", 4, 7);
-            add("black", "king", 4, 0);
-        }
-    }
-    function getSymbolForPiece(piece) {
-        const isWhite = piece.color === "white";
-        const map = {
-            pawn: "p",
-            knight: "n",
-            bishop: "b",
-            rook: "r",
-            queen: "q",
-            king: "k"
-        };
-        let symbol = map[piece.type] || "s";
-        let finalString = isWhite ? "W" : "B";
-        return finalString + symbol;
-    }
+    let thereIsOnlyKingToPlayWith = false;
+    let isWhitesTurn = true;
+    let gameOver = false;    
+    
 
     function startGame() {
         let myGame = new Game();
@@ -129,7 +20,7 @@ window.onload = function () {
     }
 
     function startTurn(game) {
-        if (game.gameOver) {
+        if (gameOver) {
             return;
         }
         domPiecesToPlay = getDOMPieces(game);
@@ -141,8 +32,34 @@ window.onload = function () {
         }
 
         for (let domPiece of domPiecesToPlay) {
-            domPiece.addEventListener("click", handlePieceClick, { once: true });
+            domPiece.addEventListener("click", (event) => handlePieceClick(event, game), { once: true });
         }
+    }
+
+    function handlePieceClick(event, game){
+        const domPiece = event.target;
+        const piece = PieceUtils.getPieceFromDOMPiece(domPiece);
+        const isWhite = piece.color === "white";
+        const opponentColor = isWhite ? "black" : "white";
+
+        domPiece.addEventListener("click", function cancelHandler(ev) {
+            ev.preventDefault();
+            cleanUp();
+            startTurn();
+        }, { once: true});
+
+        const oponnentPieces = getPieces({color: opponentColor}, game);
+        const domPieces = PieceUtils.getDOMPiecesFromPieces(oponnentPieces);
+        for (let oponnentPiece of domPieces){
+            oponnentPiece.addEventListener("click", function cancelDiffHandler(ev) {
+                ev.preventDefault();
+                cleanUp();
+                startTurn();
+                handlePieceClick({ target: oponnentPiece});
+            }, { once: true});
+        }
+
+        // TODO TODO TODO 
     }
 
     // this function returns DOM elements representing the white pieces
@@ -188,22 +105,15 @@ window.onload = function () {
             statusBarPar.textContent = actualColor + " to play";
             const actualPieces = getPieces({ color: actualColor }, game);
             for (let piece of actualPieces) {
-                const pieceIndexes = piece.toIndex();
-                domPieces.push(getDOMPiece(pieceIndexes[0], pieceIndexes[1]));
+                const pieceIndexes = piece.coordinates.toIndex();
+                domPieces.push(PieceUtils.getDOMPiece(pieceIndexes[0], pieceIndexes[1]));
             }
         }
 
         return domPieces;
     }
 
-    // very important function. Returns DOM index based on row and col indexes
-    function getDOMPiece(rowIndex, colIndex) {
-        // check if indexes are in the valid range
-        if (rowIndex === null || colIndex === null || rowIndex > 7 || rowIndex < 0 || colIndex > 7 || colIndex < 0) {
-            return null;
-        }
-        return boardRows[rowIndex].children[colIndex].firstElementChild;
-    }
+    
 
     function getCheckingPieces(game) {
         let checkingPieces = [];
@@ -381,89 +291,219 @@ window.onload = function () {
         const isWhite = piece.color === "white";
         const oppositeColorSymbol = isWhite ? "B" : "W";
         const possiblePinnedMovesIndexes = pieceIsPinned(piece, game);
-        let pieceIsPinned = false;
+        let isPinned = false;
         if (possiblePinnedMovesIndexes !== null) {
-            pieceIsPinned = true;
+            isPinned = true;
         }
 
         // check normal front move
-        const frontElementIndexes = getIndexesInDirection(piece, "front");
-        if (frontElementIndexes == null) return; // if this is null, just do not add the move
-        const [frontElementRow, frontElementCol] = frontElementIndexes;
-        const frontElementSymbol = game.chessBoard[frontElementRow][frontElementCol];
-        if (frontElementSymbol === "s") {
-            legalMoves.push([frontElementRow, frontElementCol]);
-        }
+        const front = MoveUtils.safeGetDirection(piece, p => getIndexesInDirection(p, "front"));
+        normalFront: {
+            if (front == null) break normalFront;
+            if (MoveUtils.isEmptySquare(game, front)) {
+                legalMoves.push(front);
+            }
 
-        // check initial double move
-        if (piece.hasMoved) return; // if this is true, do not add the square below
-        const doubleFrontEleIndexes = getIndexesInDirectionFromSquare([frontElementRow, frontElementCol], isWhite, "front");
-        if (doubleFrontEleIndexes == null) return;
-        const [doubleFrontRow, doubleFrontCol] = doubleFrontEleIndexes;
-        const doubleFrontSymbol = game.chessBoard[doubleFrontRow][doubleFrontCol];
-        if (doubleFrontSymbol === "s") {
-            legalMoves.push([doubleFrontRow, doubleFrontCol]);
+            doubleFront: {
+                // check initial double move
+                if (piece.hasMoved) break doubleFront;
+                const doubleFrontEleIndexes = getIndexesInDirectionFromSquare(front, isWhite, "front");
+                if (doubleFrontEleIndexes == null) break doubleFront;
+                const [doubleFrontRow, doubleFrontCol] = doubleFrontEleIndexes;
+                const doubleFrontSymbol = game.chessBoard[doubleFrontRow][doubleFrontCol];
+                if (doubleFrontSymbol === "s") {
+                    legalMoves.push(doubleFrontEleIndexes);
+                }
+            }
         }
 
         // check diagonals
-        const [topLeftRow, topLeftCol] = getIndexesInDirection(piece, "top-left");
-        let topLeftSymbol;
-        if (!([topLeftRow, topLeftCol] == null)) {
-            topLeftSymbol = game.chessBoard[topLeftRow][topLeftCol];
-            if (topLeftSymbol === "s" || topLeftSymbol.includes(oppositeColorSymbol)) {
-                legalMoves.push([topLeftRow, topLeftCol]);
-            }
-        }
+        MoveUtils.tryPushMove(legalMoves, MoveUtils.safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game, oppositeColorSymbol);
+        MoveUtils.tryPushMove(legalMoves, MoveUtils.safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game, oppositeColorSymbol);
 
-        const [topRightRow, topRightCol] = getIndexesInDirection(piece, "top-right");
-        let topRightSymbol;
-        if (!([topRightRow, topRightCol] == null)) {
-            topRightSymbol = game.chessBoard[topLeftRow][topLeftCol];
-            if (topRightSymbol === "s" || topRightSymbol.includes(oppositeColorSymbol)) {
-                legalMoves.push([topRightRow, topRightCol]);
-            }
-        }
 
         // check en passant
         // get element on left
         const leftElementIndexes = getIndexesInDirection(piece, "left");
-        if (leftElementIndexes == null) return;
+        enPassantLeft: {
+            if (leftElementIndexes == null) break enPassantLeft;
+            const [leftElementRow, leftElementCol] = leftElementIndexes;
+            let leftElementSymbol = game.chessBoard[leftElementRow][leftElementCol];
+            if (leftElementSymbol !== oppositeColorSymbol + "p") break enPassantLeft;
 
-        const [leftElementRow, leftElementCol] = leftElementIndexes;
-        let leftElementSymbol = game.chessBoard[leftElementRow][leftElementCol];
-        if (leftElementSymbol !== oppositeColorSymbol + "p") return;
+            const leftPiece = game.pieces.find(p =>
+                p.coordinates.equals(new Coordinates(leftElementCol, leftElementRow))
+            );
 
-
-        //first check if the element is pawn of opposite color -> "p"
-        const leftPiece = game.pieces.find(p =>
-            p.coordinates.equals(new Coordinates(leftElementCol, leftElementRow))
-        );
-
-        // check if that piece just jumped
-        if (leftPiece && leftPiece.hasDoubleJumped) {//if yes, we can add the field behind him to legal moves
-            legalMoves.push(getIndexesInDirection(piece, "top-left"));
+            // check if that piece just jumped
+            if (leftPiece && leftPiece.hasDoubleJumped) {//if yes, we can add the field behind him to legal moves
+                const enPassantTarget = getIndexesInDirection(piece, "top-left");
+                if (enPassantTarget) legalMoves.push(enPassantTarget);
+            }
         }
 
+        // get element on right
+        const rightElementIndexes = getIndexesInDirection(piece, "right");
+        enPassantRight: {
+            if (rightElementIndexes == null) break enPassantRight;
+            const [rightElementRow, rightElementCol] = rightElementIndexes;
 
-        // check en passant
-        // get element on left
-        const rightElementIndexes = getIndexesInDirection(piece, "left");
-        if (rightElementIndexes == null) return;
+            let rightElementSymbol = game.chessBoard[rightElementRow][rightElementCol];
+            if (rightElementSymbol !== oppositeColorSymbol + "p") break enPassantRight;
 
-        const [rightElementRow, rightElementCol] = rightElementIndexes;
-        let rightElementSymbol = game.chessBoard[rightElementRow][rightElementCol];
-        if (rightElementSymbol !== oppositeColorSymbol + "p") return;
+            const rightPiece = game.pieces.find(p =>
+                p.coordinates.equals(new Coordinates(rightElementCol, rightElementRow))
+            );
 
-
-        //first check if the element is pawn of opposite color -> "p"
-        const rightPiece = game.pieces.find(p =>
-            p.coordinates.equals(new Coordinates(rightElementCol, rightElementRow))
-        );
-
-        // check if that piece just jumped
-        if (rightPiece && rightPiece.hasDoubleJumped) {//if yes, we can add the field behind him to legal moves
-            legalMoves.push(getIndexesInDirection(piece, "top-right"));
+            // check if that piece just jumped
+            if (rightPiece && rightPiece.hasDoubleJumped) {//if yes, we can add the field behind him to legal moves
+                const enPassantTarget = getIndexesInDirection(piece, "top-right");
+                if (enPassantTarget) legalMoves.push(enPassantTarget);
+            }
         }
+
+        if (isPinned) {
+            let newLegalMoves = legalMoves.filter(
+                legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            );
+
+            return newLegalMoves;
+        }
+
+        return legalMoves;
+    }
+
+    function getLegalKnightMoves(piece, game) {
+        let isWhite = piece.color === "white";
+        let oppositeColorSymbol = isWhite ? "B" : "W";
+
+        const possiblePinnedMovesIndexes = pieceIsPinned(piece, game);
+        if (possiblePinnedMovesIndexes !== null) {// knight cannot move if its pinned -> return empty array;
+            return [];
+        }
+
+        const possibleMoves = getAllKnightMoves(piece);
+        return possibleMoves.filter(([r, c]) =>
+            r >= 0 && r < 8 &&
+            c >= 0 && c < 8 &&
+            (game.chessBoard[r][c] === "s" || game.chessBoard[r][c].includes(oppositeColorSymbol))
+        );
+    }
+
+    function getAllKnightMoves(piece) {
+        const [r, c] = piece.coordinates.toIndex();
+        const deltas = [[-1, -2], [-2, -1], [-1, 2], [-2, 1], [1, -2], [2, -1], [1, 2], [2, 1]];
+        return deltas.map(([dR, dC]) => [r + dR, c + dC]);
+    }
+
+    function getLegalBishopMoves(piece, game){
+        let legalMoves = [];
+        const isWhite = piece.color === "white";
+        // before we start checking normal moves, check if you are not pinned
+        let possiblePinnedMovesIndexes = pieceIsPinned(bishop);
+        let isThePiecePinned = false;
+        if (possiblePinnedMovesIndexes !== null) {
+            isThePiecePinned = true;
+        }
+
+        const pieceIndexes = piece.coordinates.toIndex();
+
+        const topLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-left", game);
+        const topRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-right", game);
+        const bottomLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-left", game);
+        const bottomRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-right", game);
+
+        legalMoves.push(...topLeftDiagonalMoves);
+        legalMoves.push(...topRightDiagonalMoves);
+        legalMoves.push(...bottomLeftDiagonalMoves);
+        legalMoves.push(...bottomRightDiagonalMoves);
+
+        if (isPinned) {
+            let newLegalMoves = legalMoves.filter(
+                legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            );
+
+            return newLegalMoves;
+        }
+
+        return legalMoves;
+    }
+
+    function getLegalRookMoves(piece, game){
+        let legalMoves = [];
+        const isWhite = piece.color === "white";
+        // before we start checking normal moves, check if you are not pinned
+        let possiblePinnedMovesIndexes = pieceIsPinned(bishop);
+        let isThePiecePinned = false;
+        if (possiblePinnedMovesIndexes !== null) {
+            isThePiecePinned = true;
+        }
+
+        const pieceIndexes = piece.coordinates.toIndex();
+
+        const frontMoves = getLongRangeMoves(pieceIndexes, isWhite, "front", game);
+        const backMoves = getLongRangeMoves(pieceIndexes, isWhite, "back", game);
+        const leftMoves = getLongRangeMoves(pieceIndexes, isWhite, "left", game);
+        const rightMoves = getLongRangeMoves(pieceIndexes, isWhite, "right", game);
+
+        legalMoves.push(...frontMoves);
+        legalMoves.push(...backMoves);
+        legalMoves.push(...leftMoves);
+        legalMoves.push(...rightMoves);
+
+        if (isPinned) {
+            let newLegalMoves = legalMoves.filter(
+                legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            );
+
+            return newLegalMoves;
+        }
+
+        return legalMoves;
+    }
+
+    function getLegalQueenMoves(piece, game){
+        let legalMoves = [];
+        const isWhite = piece.color === "white";
+        // before we start checking normal moves, check if you are not pinned
+        let possiblePinnedMovesIndexes = pieceIsPinned(bishop);
+        let isThePiecePinned = false;
+        if (possiblePinnedMovesIndexes !== null) {
+            isThePiecePinned = true;
+        }
+
+        const pieceIndexes = piece.coordinates.toIndex();
+
+        const topLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-left", game);
+        const topRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-right", game);
+        const bottomLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-left", game);
+        const bottomRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-right", game);
+        const frontMoves = getLongRangeMoves(pieceIndexes, isWhite, "front", game);
+        const backMoves = getLongRangeMoves(pieceIndexes, isWhite, "back", game);
+        const leftMoves = getLongRangeMoves(pieceIndexes, isWhite, "left", game);
+        const rightMoves = getLongRangeMoves(pieceIndexes, isWhite, "right", game);
+
+        legalMoves.push(...topLeftDiagonalMoves);
+        legalMoves.push(...topRightDiagonalMoves);
+        legalMoves.push(...bottomLeftDiagonalMoves);
+        legalMoves.push(...bottomRightDiagonalMoves);
+        legalMoves.push(...frontMoves);
+        legalMoves.push(...backMoves);
+        legalMoves.push(...leftMoves);
+        legalMoves.push(...rightMoves);
+
+        if (isPinned) {
+            let newLegalMoves = legalMoves.filter(
+                legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            );
+
+            return newLegalMoves;
+        }
+
+        return legalMoves;
+    }
+
+    function getLegalKingMoves(){
 
     }
 
@@ -568,5 +608,7 @@ window.onload = function () {
 
         return legalMoves;
     }
+
+    startGame();
 
 };
