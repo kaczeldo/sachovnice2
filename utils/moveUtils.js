@@ -314,6 +314,7 @@ function getLegalKingMoves(piece, game) {
     let possibleMoves = [];
     const isWhite = piece.color == "white";
     const oppositeColor = isWhite ? "black" : "white";
+    const sameColor = isWhite ? "white" : "black";
 
     let directions = ["front", "top-right", "right", "bottom-right", "back", "bottom-left", "left", "top-left"];
     let nextElement;
@@ -324,11 +325,26 @@ function getLegalKingMoves(piece, game) {
             // do nothing
         } else if (game.chessBoard[nextElement[0]][nextElement[1]] === "s" && !(ConditionUtils.isAttacked(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
-        } else if (nextElement.classList.contains(oppositeColor) && !(isDefended(nextElement, !(isWhite)))) {
+        } else if (nextElement.classList.contains(oppositeColor) && !(ConditionUtils.isDefended(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
         }
     }
 
+    // here we will check if castles is possible
+    const rooks = PieceUtils.getPieces({color: sameColor, type: "rook"}, game);
+
+    if (ConditionUtils.castlesIsPossible(king, rooks[0])) {
+        const castle1 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, "left")), isWhite, "left");
+        possibleMoves.push(castle1);
+
+    }
+
+    if (ConditionUtils.castlesIsPossible(king, rooks[1])) {
+        const castle2 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, "right")), isWhite, "right");
+        possibleMoves.push(castle2);
+    }
+
+    // TODO TODO TODO
 
 }
 
@@ -371,56 +387,78 @@ export function getNeutralLongRangeMoves(currentIndexes, isWhite, direction, gam
     return theMoves;
 }
 
-export function getAttackingMoves(possibleChecker, game) {
-    let attackingMoves = [];
-    switch (possibleChecker.type) {
+export function getDefendingMoves(defender, game) {
+    let defendingMoves = [];
+    switch (defender.type) {
         case "pawn":
-            attackingMoves = getPawnAttackingMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         case "knight":
-            attackingMoves = getLegalKnightMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         case "bishop":
-            attackingMoves = getLegalBishopMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         case "rook":
-            attackingMoves = getLegalRookMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         case "queen":
-            attackingMoves = getLegalQueenMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         case "king":
-            attackingMoves = getAttackingKingMoves(possibleChecker, game);
+            defendingMoves = getMoves(defender, game);
             break;
         default:
             console.error("invalid piece type");
             break;
     }
 
-    return attackingMoves;
+    return defendingMoves.filter(m => isFriendlyPiece(possibleChecker, m, game));
 }
 
-function getPawnAttackingMoves(piece, game) {
-    let attackingMoves = [];
+function isFriendlyPiece(piece, indexes, game) {
     const isWhite = piece.color === "white";
-    const topLeftIndexes = getIndexesInDirection(piece, "top-left");
-    const oppositeColorSymbol = isWhite ? "B" : "W";
-    if (!(topLeftIndexes == null)) {
-        const topLeftElement = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
-        if (topLeftElement === "s" || topLeftElement.includes(oppositeColorSymbol)) {
-            attackingMoves.push(topLeftIndexes);
-        }
+    const friendlyColorMark = isWhite ? "W" : "B";
+
+    const pieceSymbol = game.chessBoard[indexes[0]][indexes[1]];
+    return pieceSymbol.includes(friendlyColorMark);
+}
+
+export function getAttackingMoves(possibleChecker, game) {
+    let attackingMoves = [];
+    switch (possibleChecker.type) {
+        case "pawn":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        case "knight":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        case "bishop":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        case "rook":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        case "queen":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        case "king":
+            attackingMoves = getMoves(possibleChecker, game);
+            break;
+        default:
+            console.error("invalid piece type");
+            break;
     }
 
-    const topRightIndexes = getIndexesInDirection(piece, "top-right");
-    if (!(topRightIndexes == null)) {
-        const topRightElement = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
-        if (topRightElement === "s" || topRightElement.includes(oppositeColorSymbol)) {
-            attackingMoves.push(topRightIndexes);
-        }
-    }
+    return attackingMoves.filter(m => isOponentPiece(possibleChecker, m, game));
+}
 
-    return attackingMoves;
+function isOponentPiece(piece, indexes, game) {
+    const isWhite = piece.color === "white";
+    const oponentColorMark = isWhite ? "B" : "W";
+
+    const pieceSymbol = game.chessBoard[indexes[0]][indexes[1]];
+    return pieceSymbol.includes(oponentColorMark);
 }
 
 export function getIndexesInDirection(piece, direction) {
@@ -530,15 +568,15 @@ function getPawnMoves(piece, game) {
     // check normal front move - NO - we do not need it, we need only defending and attacking moves
 
     // check diagonals
-    tryPushNeutralMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game);
-    tryPushNeutralMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game);
+    tryPushNeutralMove(theMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game);
+    tryPushNeutralMove(theMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game);
 
 
     // check en passant - NO, we do not need it. 
     return theMoves;
 }
 
-function getKnightMoves(piece, game){
+function getKnightMoves(piece, game) {
 
     const possibleMoves = getAllKnightMoves(piece);
     return possibleMoves.filter(([r, c]) =>
@@ -591,14 +629,14 @@ function getQueenMoves(piece, game) {
 
     const pieceIndexes = piece.coordinates.toIndex();
 
-    const topLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-left", game);
-    const topRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "top-right", game);
-    const bottomLeftDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-left", game);
-    const bottomRightDiagonalMoves = getLongRangeMoves(pieceIndexes, isWhite, "bottom-right", game);
-    const frontMoves = getLongRangeMoves(pieceIndexes, isWhite, "front", game);
-    const backMoves = getLongRangeMoves(pieceIndexes, isWhite, "back", game);
-    const leftMoves = getLongRangeMoves(pieceIndexes, isWhite, "left", game);
-    const rightMoves = getLongRangeMoves(pieceIndexes, isWhite, "right", game);
+    const topLeftDiagonalMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "top-left", game);
+    const topRightDiagonalMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "top-right", game);
+    const bottomLeftDiagonalMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "bottom-left", game);
+    const bottomRightDiagonalMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "bottom-right", game);
+    const frontMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "front", game);
+    const backMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "back", game);
+    const leftMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "left", game);
+    const rightMoves = getNeutralLongRangeMoves(pieceIndexes, isWhite, "right", game);
 
     theMoves.push(...topLeftDiagonalMoves);
     theMoves.push(...topRightDiagonalMoves);
@@ -612,7 +650,7 @@ function getQueenMoves(piece, game) {
     return theMoves;
 }
 
-function getKingMoves(piece, game){
+function getKingMoves(piece, game) {
     let theMoves = [];
 
     let directions = ["front", "top-right", "right", "bottom-right", "back", "bottom-left", "left", "top-left"];

@@ -89,20 +89,40 @@ export function pieceIsPinned(piece, game) {
 /**
  * This function answers this question: is given square on 'indexes' attacked by any piece of given 'attackerColor'?
  * @param {*} indexes indexes of the square we are asking about
- * @param {*} attackerColor the color white/black of attackers
+ * @param {*} isWhite the color of attackers, if yes, attacker is white, if false, attacker is black
  */
-export function isAttacked(indexes, attackerColor, game){
+export function isAttacked(indexes, isWhite, game){
+    const attackerColor = isWhite ? "white" : "black";
     // first get pieces of attackerColor
     const attackerPieces = PieceUtils.getPieces({color: attackerColor}, game);
 
     // go through each piece
     for (let piece of attackerPieces){
         // get its legal moves
-        let pieceLegalMoves = MoveUtils.getLegalMoves(piece, game);
+        let pieceLegalMoves = MoveUtils.getAttackingMoves(piece, game);
         if (pieceLegalMoves.includes(indexes)){
             return true;
         }
     }
 
     return false;
+}
+
+export function isDefended(indexes, isWhite, game){
+    const color = isWhite ? "white" : "black";
+    // first get friendly pieces
+    const friendlyPieces = PieceUtils.getPieces({color: color}, game);
+
+    for (let piece of friendlyPieces){
+        let pieceDefendingMoves = MoveUtils.getDefendingMoves(piece, game);
+        if (pieceDefendingMoves.includes(indexes)){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+export function castlesIsPossible(king, rook){
+    return !(king.hasMoved) && !(rook.hasMoved);
 }
