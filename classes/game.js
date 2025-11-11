@@ -1,10 +1,15 @@
-import { Piece } from "./piece";
+import * as MoveUtils from "../utils/moveUtils.js";
+import * as PieceUtils from "../utils/getPiecesUtils.js";
+import * as ConditionUtils from "../utils/conditionUtils.js";
+import { Coordinates } from "./coordinates.js";
+import { Piece } from "./piece.js";
 
-class Game {
+export class Game {
     constructor() {
         this.pieces = [];
         this.chessBoard = [];
-        this.isCheck = false;
+        this.isWhiteCheck = false;
+        this.isBlackCheck = false;
         this.isDoubleCheck = false;
 
         this.setupInitialPosition();
@@ -23,7 +28,7 @@ class Game {
         // go through all pieces
         for (let piece of this.pieces) {
             const pieceIndexes = piece.coordinates.toIndex();
-            const symbol = getSymbolForPiece(piece);
+            const symbol = PieceUtils.getSymbolForPiece(piece);
             this.chessBoard[pieceIndexes[0]][pieceIndexes[1]] = symbol;
         }
     }

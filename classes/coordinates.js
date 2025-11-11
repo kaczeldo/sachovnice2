@@ -1,3 +1,9 @@
+import * as MoveUtils from "../utils/moveUtils.js";
+import * as PieceUtils from "../utils/getPiecesUtils.js";
+import * as ConditionUtils from "../utils/conditionUtils.js";
+import { Piece } from "./piece.js";
+import { Game } from "./game.js";
+
 export class Coordinates {
     constructor(x, y) {
         this.x = x;// 0 - 7 for chess board columns

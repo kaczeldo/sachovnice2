@@ -1,3 +1,9 @@
+import * as MoveUtils from "../utils/moveUtils.js";
+import * as PieceUtils from "../utils/getPiecesUtils.js";
+import * as ConditionUtils from "../utils/conditionUtils.js";
+import { Coordinates } from "./coordinates.js";
+import { Game } from "./game.js";
+
 
 export class Piece {
     constructor(color, type, coordinates) {

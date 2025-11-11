@@ -1,0 +1,108 @@
+import * as MoveUtils from "./moveUtils.js";
+import * as PieceUtils from "./getPiecesUtils.js";
+import { Coordinates } from "../classes/coordinates.js";
+import { Piece } from "../classes/piece.js";
+import { Game } from "../classes/game.js";
+
+export function pieceIsPinned(piece, game) {
+    const isWhite = piece.color === "white";
+    const sameColor = isWhite ? "white" : "black";
+    const king = getPieces({ color: sameColor, type: "king" }, game); // 1 item array
+    let possibleMovesDuringPin = [];
+    // based on indexes, calculate direction from king to piece
+    const [kingRow, kingCol] = king.coordinates.toIndex();
+    const [pieceRow, pieceCol] = piece.coordinates.toIndex();
+    const rowsDifference = kingRow - pieceRow;
+    const colsDifference = kingCol - pieceCol;
+
+    let direction;
+    if (rowsDifference > 0 && colsDifference > 0) {
+        direction = isWhite ? "top-left" : "bottom-right";
+    } else if (rowsDifference > 0 && colsDifference === 0) {
+        direction = isWhite ? "front" : "back";
+    } else if (rowsDifference > 0 && colsDifference < 0) {
+        direction = isWhite ? "top-right" : "bottom-left";
+    } else if (rowsDifference === 0 && colsDifference > 0) {
+        direction = isWhite ? "left" : "right";
+    } else if (rowsDifference === 0 && colsDifference < 0) {
+        direction = isWhite ? "right" : "left";
+    } else if (rowsDifference < 0 && colsDifference > 0) {
+        direction = isWhite ? "bottom-left" : "top-right";
+    } else if (rowsDifference < 0 && colsDifference === 0) {
+        direction = isWhite ? "back" : "front";
+    } else if (rowsDifference < 0 && colsDifference < 0) {
+        direction = isWhite ? "bottom-right" : "top-left";
+    }
+
+    // in this array we will store piece types which can pin the piece in given direction
+    let possiblePieceTypes = [];
+    if (["front", "back", "left", "right"].includes(direction)) {
+        possiblePieceTypes.push("q");
+        possiblePieceTypes.push("r");
+    } else if (["top-left", "top-right", "bottom-left", "bottom-right"].includes(direction)) {
+        possiblePieceTypes.push("q");
+        possiblePieceTypes.push("b");
+    }
+
+    // remove the piece on the board temporarily
+    const pieceSymbol = game.chessBoard[pieceRow, pieceCol];
+    game.chessBoard[pieceRow, pieceCol] = "s";// change it to empty square
+
+    // get king long range moves in given direction -> we will check which opposite piece is at the end, if there is one
+    let kingMovesInDirection = getLongRangeMoves([kingRow, kingCol], isWhite, direction, game);
+    if (kingMovesInDirection == null || kingMovesInDirection.length === 0) {
+        // do not forget to add the piece back to board!
+        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+
+        return null;
+    }
+
+    const lastItemIndexes = kingMovesInDirection.at(-1);
+    const lastItemSymbol = game.chessBoard[lastItemIndexes[0]][lastItemIndexes[1]];
+    const oppositeColorSymbol = isWhite ? "B" : "W";
+    if (!(lastItemSymbol.includes(oppositeColorSymbol))) {// if there is no piece looking through the pice on king
+        // we know we are not pinned, return null
+
+        // do not forget to add the piece back to board!
+        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+
+        return null;
+    }
+
+    // otherwise check if the piece is the one which can attack in given direction
+    // the string is for example "Wb", how to get the last symbol of the string. 
+    if (lastItemSymbol.includes(oppositeColorSymbol) && possiblePieceTypes.includes(lastItemSymbol[lastItemSymbol.length - 1])) {
+        possibleMovesDuringPin.push(...kingMovesInDirection);
+        possibleMovesDuringPin = possibleMovesDuringPin.filter(item => !(item[0] === pieceRow && item[1] === pieceCol));
+
+        // do not forget to add the piece back to board!
+        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+
+        return possibleMovesDuringPin;
+    }
+
+    // do not forget to add the piece back to board!
+    game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+    return null;
+}
+
+/**
+ * This function answers this question: is given square on 'indexes' attacked by any piece of given 'attackerColor'?
+ * @param {*} indexes indexes of the square we are asking about
+ * @param {*} attackerColor the color white/black of attackers
+ */
+export function isAttacked(indexes, attackerColor, game){
+    // first get pieces of attackerColor
+    const attackerPieces = PieceUtils.getPieces({color: attackerColor}, game);
+
+    // go through each piece
+    for (let piece of attackerPieces){
+        // get its legal moves
+        let pieceLegalMoves = MoveUtils.getLegalMoves(piece, game);
+        if (pieceLegalMoves.includes(indexes)){
+            return true;
+        }
+    }
+
+    return false;
+}
