@@ -1,8 +1,10 @@
 import * as MoveUtils from "./moveUtils.js";
 import * as PieceUtils from "./getPiecesUtils.js";
+import * as DomUtils from "./domUtils.js";
 import { Coordinates } from "../classes/coordinates.js";
 import { Piece } from "../classes/piece.js";
 import { Game } from "../classes/game.js";
+import * as Globals from "../classes/globals.js";
 
 export function pieceIsPinned(piece, game) {
     const isWhite = piece.color === "white";

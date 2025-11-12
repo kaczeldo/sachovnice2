@@ -4,17 +4,15 @@ import * as ConditionUtils from "./utils/conditionUtils.js";
 import { Coordinates } from "./classes/coordinates.js";
 import { Piece } from "./classes/piece.js";
 import { Game } from "./classes/game.js";
+import * as Globals from "./classes/globals.js";
+import * as Ui from "./utils/ui.js"
+import * as GameUtils from "./utils/gameUtils.js";
+import * as DomUtils from "./utils/domUtils.js";
 
 window.onload = function () {
     // needed variables
-    const statusBarPar = document.getElementById("status-bar").firstElementChild;
+    Ui.initiateStatusBar(document.getElementById("status-bar").firstElementChild);
     const boardRows = document.getElementsByClassName("board-row");
-    let domPiecesToPlay = []; // in this array will be the DOM elements
-    let thereIsOnlyKingToPlayWith = false;
-    let isWhitesTurn = true;
-    let gameOver = false;
-    let isWhiteInCheck = false;
-    let isBlackInCheck = false;
 
     function startGame() {
         let myGame = new Game();
@@ -22,18 +20,25 @@ window.onload = function () {
     }
 
     function startTurn(game) {
-        if (gameOver) {
+        if (Globals.gameOver) {
             return;
         }
-        domPiecesToPlay = PieceUtils.getDOMPieces(game);
+        Globals.domPiecesToPlay = PieceUtils.getDOMPieces(game);
 
-        if (domPiecesToPlay.length === 1) {//there is only king to play with
-            thereIsOnlyKingToPlayWith = true;
+        // set message
+        if (Globals.isWhitesTurn){
+            Ui.updateStatusBar("White to play.");
         } else {
-            thereIsOnlyKingToPlayWith = false;
+            Ui.initiateStatusBar("Black to play.");
+        }        
+
+        if (Globals.domPiecesToPlay.length === 1) {//there is only king to play with
+            Globals.thereIsOnlyKingToPlayWith = true;
+        } else {
+            Globals.thereIsOnlyKingToPlayWith = false;
         }
 
-        for (let domPiece of domPiecesToPlay) {
+        for (let domPiece of Globals.domPiecesToPlay) {
             domPiece.addEventListener("click", (event) => handlePieceClick(event, game), { once: true });
         }
     }
@@ -46,7 +51,7 @@ window.onload = function () {
 
         domPiece.addEventListener("click", function cancelHandler(ev) {
             ev.preventDefault();
-            cleanUp();
+            GameUtils.cleanUp(game);
             startTurn();
         }, { once: true });
 
@@ -55,24 +60,27 @@ window.onload = function () {
         for (let oponnentPiece of domPieces) {
             oponnentPiece.addEventListener("click", function cancelDiffHandler(ev) {
                 ev.preventDefault();
-                cleanUp();
+                GameUtils.cleanUp(game);
                 startTurn();
                 handlePieceClick({ target: oponnentPiece });
             }, { once: true });
         }
 
         let legalMoves = [];
-        if (game.isBlackCheck || game.isWhiteCheck) {
-            legalMoves = getLegalCheckMoves(piece, game);
+        if (Globals.isWhiteInCheck || Globals.isBlackInCheck) {
+            legalMoves = MoveUtils.getLegalCheckMoves(piece, game);
         } else {
             legalMoves = MoveUtils.getLegalMoves(piece, game);
         }
 
+        // convert legalMoves - which currently are just indexes of legal moves, 
+        // to actual dom elements
+        let legalDomMoves = DomUtils.getDOMElementsFromIndexes(legalMoves, game);
         // HIGHLIGHT EMPTY-SQUARE MOVES
-        legalMoves = highlightMoves(legalMoves);
+        legalDomMoves = Ui.highlightMoves(legalDomMoves, game);
 
         // now handle the moves
-        for (let legalMove of legalMoves) {
+        for (let legalMove of legalDomMoves) {
             legalMove.addEventListener("click", function moveHandler(event) {
                 event.preventDefault();
 
@@ -91,24 +99,24 @@ window.onload = function () {
                 }
 
                 // after the move, put down check flags
-                isWhiteInCheck = false;
-                isBlackInCheck = false;
+                Globals.isWhiteInCheck = false;
+                Globals.isBlackInCheck = false;
 
                 let nrOfCheckingPieces = isCheck();
 
-                if (isWhitesTurn && nrOfCheckingPieces > 0) {
-                    isWhiteInCheck = true;
-                } else if ((!(isWhitesTurn)) && nrOfCheckingPieces > 0) {
-                    isBlackInCheck = true;
+                if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
+                    Globals.isWhiteInCheck = true;
+                } else if ((!(Globals.isWhitesTurn)) && nrOfCheckingPieces > 0) {
+                    Globals.isBlackInCheck = true;
                 }
 
                 if (nrOfCheckingPieces >= 2) {
-                    isDoubleCheck = true;
+                    Globals.isDoubleCheck = true;
                 } else {
-                    isDoubleCheck = false;
+                    Globals.isDoubleCheck = false;
                 }
 
-                isWhitesTurn = !isWhitesTurn;
+                Globals.isWhitesTurn = !(Globals.isWhitesTurn);
 
                 cleanUp();
 

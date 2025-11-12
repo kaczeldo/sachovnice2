@@ -1,8 +1,13 @@
 import * as PieceUtils from "./getPiecesUtils.js";
+import * as DomUtils from "./domUtils.js";
+import * as Ui from "./ui.js";
+import * as GameUtils from "./gameUtils.js";
 import * as ConditionUtils from "./conditionUtils.js";
 import { Coordinates } from "../classes/coordinates.js";
 import { Piece } from "../classes/piece.js";
 import { Game } from "../classes/game.js";
+import * as Globals from "../classes/globals.js";
+
 
 /**
  * This function will check if given move is a legalMove - move to empty square or oponnents piece.
@@ -331,7 +336,7 @@ function getLegalKingMoves(piece, game) {
     }
 
     // here we will check if castles is possible
-    const rooks = PieceUtils.getPieces({color: sameColor, type: "rook"}, game);
+    const rooks = PieceUtils.getPieces({ color: sameColor, type: "rook" }, game);
 
     if (ConditionUtils.castlesIsPossible(king, rooks[0])) {
         const castle1 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, "left")), isWhite, "left");
@@ -344,8 +349,21 @@ function getLegalKingMoves(piece, game) {
         possibleMoves.push(castle2);
     }
 
-    // TODO TODO TODO
+    if (Globals.thereIsOnlyKingToPlayWith && possibleMoves.length === 0) {
+        const sameColor = isWhite ? "white" : "black";
+        // CHECKMATE
+        if (isWhite && Globals.isWhiteInCheck) {
+            Ui.updateStatusBar("CHECKMATE!! " + oppositeColor + " has checkmated the " + sameColor + "! GAME OVER");
+        } else if (!(isWhite) && isBlackKingInCheck) {
+            Ui.updateStatusBar("CHECKMATE!! " + oppositeColor + " has checkmated the " + sameColor + "! GAME OVER");
+        } else {//PAT
+            Ui.updateStatusBar("PAT!! It is a draw at the end.");
+        }
 
+        Globals.gameOver = true;
+    }
+
+    return possibleMoves;
 }
 
 export function getLongRangeMoves(currentIndexes, isWhite, direction, game) {
@@ -666,4 +684,109 @@ function getKingMoves(piece, game) {
     }
 
     return theMoves;
+}
+
+export function getLegalCheckMoves(piece, game) {
+    let legalMoves = [];
+
+    switch (piece.type) {
+        case "pawn":
+            legalMoves = getLegalPawnMoves(piece, game);
+            break;
+        case "knight":
+            legalMoves = getLegalKnightMoves(piece, game);
+            break;
+        case "bishop":
+            legalMoves = getLegalBishopMoves(piece, game);
+            break;
+        case "rook":
+            legalMoves = getLegalRookMoves(piece, game);
+            break;
+        case "queen":
+            legalMoves = getLegalQueenMoves(piece, game);
+            break;
+        case "king":
+            legalMoves = getLegalKingMoves(piece, game);
+            break;
+        default:
+            break;
+    }
+
+    // if we are looking at kings moves, return normal legal moves
+    if (piece.type === "king"){
+        return legalMoves;
+    }
+
+    // now go through legal moves and pick only those which are on the line between attacker and king
+    let legalCheckMoves = [];
+
+    const isWhite = piece.color === "white";
+    const sameColor = isWhitesTurn ? "white" : "black";
+
+    const king = PieceUtils.getPieces({ color: sameColor, type: "king" }, game).item(1);
+
+    const checkingPieces = PieceUtils.getCheckingPieces(!(isWhite), game);
+
+    // if there is different number of checking pieces than 1, return empty array -> invalid state
+    if (!(checkingPieces.length === 1)) {
+        return [];
+    }
+
+    const checkingPieceIsKnight = checkingPieces[0].type === "knight";
+
+    // in case of knight check AND this piece can take the checking piece
+    if (checkingPieceIsKnight && legalMoves.includes(checkingPieces[0])) {
+        legalCheckMoves.push(checkingPieces[0]);
+        return legalCheckMoves;
+    } else if (checkingPieceIsKnight) {
+        return legalCheckMoves;
+    }
+
+    const squaresBetweenKingAndChecker = getSquaresBetweenKingAndChecker(king, checkingPieces[0], game);
+    
+
+    // go through each move and check if it lays on the line between attacker and king. If yes, add it.
+    for (let potentialMove of legalMoves) {
+        if (squaresBetweenKingAndChecker.includes(potentialMove)) {
+            legalCheckMoves.push(potentialMove);
+        }
+    }
+
+    return legalCheckMoves;
+}
+
+function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
+    const isCheckerWhite = checkingPiece.color === "white";
+    const [chR, chC] = checkingPiece.coordinates.toIndex();
+    const [kR, kC] = king.coordinates.toIndex();
+
+    const rowsDifference = chR - kR;
+    const colsDifference = chC - kC;
+
+    let direction;
+    if (rowsDifference > 0 && colsDifference > 0) {
+        direction = isCheckerWhite ? "top-left" : "bottom-right";
+    } else if (rowsDifference > 0 && colsDifference === 0) {
+        direction = isCheckerWhite ? "front" : "back";
+    } else if (rowsDifference > 0 && colsDifference < 0) {
+        direction = isCheckerWhite ? "top-right" : "bottom-left";
+    } else if (rowsDifference === 0 && colsDifference > 0) {
+        direction = isCheckerWhite ? "left" : "right";
+    } else if (rowsDifference === 0 && colsDifference < 0) {
+        direction = isCheckerWhite ? "right" : "left";
+    } else if (rowsDifference < 0 && colsDifference > 0) {
+        direction = isCheckerWhite ? "bottom-left" : "top-right";
+    } else if (rowsDifference < 0 && colsDifference === 0) {
+        direction = isCheckerWhite ? "back" : "front";
+    } else if (rowsDifference < 0 && colsDifference < 0) {
+        direction = isCheckerWhite ? "bottom-right" : "top-left";
+    }
+
+    let squaresBetween = [];
+    // include the checking piece -> possiblity to take the piece
+    squaresBetween.push(checkingPiece);
+    squaresBetween.push(...getLongRangeMoves(checkingPiece, isCheckerWhite, direction, game));
+    squaresBetween.pop();
+
+    return squaresBetween;
 }

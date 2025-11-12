@@ -15,5 +15,6 @@ export class Piece {
         this.wasTaken = false;
         this.hasMoved = false;
         this.hasDoubleJumped = false;
+        this.hasDoubleJumpedNow = false;
     }
 }
