@@ -17,4 +17,19 @@ export class Piece {
         this.hasDoubleJumped = false;
         this.hasDoubleJumpedNow = false;
     }
+
+    moveTo(indexes){
+        this.coordinates = new Coordinates(indexes[1], indexes[0]);
+        this.hasMoved = true;
+    }
+
+    take(){
+        this.wasTaken = true;
+    }
+
+    promote(newType){
+        this.type = newType;
+    }
+
+
 }

@@ -130,9 +130,21 @@ function getLegalPawnMoves(piece, game) {
     }
 
     // check diagonals
+    const topLeftIndexes = getIndexesInDirection(piece, "top-left"); 
+    const topLeftSymbol = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
+    const topRightIndexes = getIndexesInDirection(piece, "top-right");
+    const topRightSymbol = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
+    console.log("diagonal symbols for pawn: " + topLeftSymbol + topRightSymbol);
+    if(topLeftSymbol === oppositeColorSymbol){
+        legalMoves.push(topLeftIndexes);
+    }
+    if(topRightSymbol === oppositeColorSymbol){
+        legalMoves.push(topRightIndexes);
+    }
+    /*
     tryPushMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game, oppositeColorSymbol);
     tryPushMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game, oppositeColorSymbol);
-
+    */
 
     // check en passant
     // get element on left
@@ -480,7 +492,7 @@ function isOponentPiece(piece, indexes, game) {
 }
 
 export function getIndexesInDirection(piece, direction) {
-    const { row, col } = piece.toIndex();
+    const [row, col] = piece.coordinates.toIndex();
     const isWhite = piece.color === "white";
 
     const directionMap = {
@@ -502,8 +514,11 @@ export function getIndexesInDirection(piece, direction) {
 
     const [dRow, dCol] = delta;
     const newRow = row + dRow;
+    console.log("The calulated new row is: " + newRow);
+    
     const newCol = col + dCol;
 
+    console.log("The calulated new col is: " + newCol);
     if (newRow > 7 || newCol > 7 || newRow < 0 || newCol < 0) {
         return null;
     }
@@ -512,7 +527,7 @@ export function getIndexesInDirection(piece, direction) {
 }
 
 export function getIndexesInDirectionFromSquare(indexes, isWhite, direction) {
-    const { row, col } = indexes;
+    const [row, col] = indexes;
 
     const directionMap = {
         front: [isWhite ? -1 : 1, 0],

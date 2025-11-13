@@ -9,7 +9,7 @@ import * as Globals from "../classes/globals.js";
 export function pieceIsPinned(piece, game) {
     const isWhite = piece.color === "white";
     const sameColor = isWhite ? "white" : "black";
-    const king = getPieces({ color: sameColor, type: "king" }, game); // 1 item array
+    const king = PieceUtils.getPieces({ color: sameColor, type: "king" }, game)[0]; // 1 item array
     let possibleMovesDuringPin = [];
     // based on indexes, calculate direction from king to piece
     const [kingRow, kingCol] = king.coordinates.toIndex();
@@ -51,7 +51,7 @@ export function pieceIsPinned(piece, game) {
     game.chessBoard[pieceRow, pieceCol] = "s";// change it to empty square
 
     // get king long range moves in given direction -> we will check which opposite piece is at the end, if there is one
-    let kingMovesInDirection = getLongRangeMoves([kingRow, kingCol], isWhite, direction, game);
+    let kingMovesInDirection = MoveUtils.getLongRangeMoves([kingRow, kingCol], isWhite, direction, game);
     if (kingMovesInDirection == null || kingMovesInDirection.length === 0) {
         // do not forget to add the piece back to board!
         game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
@@ -93,16 +93,16 @@ export function pieceIsPinned(piece, game) {
  * @param {*} indexes indexes of the square we are asking about
  * @param {*} isWhite the color of attackers, if yes, attacker is white, if false, attacker is black
  */
-export function isAttacked(indexes, isWhite, game){
+export function isAttacked(indexes, isWhite, game) {
     const attackerColor = isWhite ? "white" : "black";
     // first get pieces of attackerColor
-    const attackerPieces = PieceUtils.getPieces({color: attackerColor}, game);
+    const attackerPieces = PieceUtils.getPieces({ color: attackerColor }, game);
 
     // go through each piece
-    for (let piece of attackerPieces){
+    for (let piece of attackerPieces) {
         // get its legal moves
         let pieceLegalMoves = MoveUtils.getAttackingMoves(piece, game);
-        if (pieceLegalMoves.includes(indexes)){
+        if (pieceLegalMoves.includes(indexes)) {
             return true;
         }
     }
@@ -110,14 +110,14 @@ export function isAttacked(indexes, isWhite, game){
     return false;
 }
 
-export function isDefended(indexes, isWhite, game){
+export function isDefended(indexes, isWhite, game) {
     const color = isWhite ? "white" : "black";
     // first get friendly pieces
-    const friendlyPieces = PieceUtils.getPieces({color: color}, game);
+    const friendlyPieces = PieceUtils.getPieces({ color: color }, game);
 
-    for (let piece of friendlyPieces){
+    for (let piece of friendlyPieces) {
         let pieceDefendingMoves = MoveUtils.getDefendingMoves(piece, game);
-        if (pieceDefendingMoves.includes(indexes)){
+        if (pieceDefendingMoves.includes(indexes)) {
             return true;
         }
     }
@@ -125,6 +125,82 @@ export function isDefended(indexes, isWhite, game){
     return false;
 }
 
-export function castlesIsPossible(king, rook){
+export function castlesIsPossible(king, rook) {
     return !(king.hasMoved) && !(rook.hasMoved);
+}
+
+export function thisIsPawnSpecialMove(piece, legalMove, game) {
+    const isWhite = piece.classList.contains("white");
+
+    // first check if the piece is pawn
+    if (!(piece.type === "pawn")) {//if not
+        return false;
+    }
+
+    // then check if the pawn is on initial position
+    if (piece.hasMoved) {
+        return false;
+    }
+
+    // lastly, check if the legal move is the '2nd front element'.
+    const front = MoveUtils.getIndexesInDirection(piece, "front");
+    const doubleFront = MoveUtils.getIndexesInDirectionFromSquare(front, isWhite, "front");
+    const domElement = DomUtils.getDOMElementsFromIndexes(doubleFront, game);
+
+    if (domElement !== legalMove) {
+        return false;
+    }
+
+    return true;
+}
+
+export function thisIsPawnPromotionMove(piece, legalMove) {
+    const isWhite = piece.color === "white";
+    const lastRowsIndex = isWhite ? 0 : 7;
+
+    if (piece.type === "pawn" && getRowIndex(legalMove) === lastRowsIndex) {
+        return true;
+    }
+
+    return false;
+}
+
+export function thisIsEnPassantMove(piece, legalMove, game) {
+    /*
+        Conditions:
+        a) piece is pawn
+        b) the move is to diagonal from the pawn, and there is no piece there
+        c) next to it, in the direction of the legal move, there is pawn which just made double move
+        */
+    const isWhite = piece.color === "white";
+
+    if (piece.type !== "pawn") {
+        return false;
+    }
+
+    const [_, col] = piece.coordinates.toIndex();
+    const colDifference = col - getColumnsIndex(legalMove);
+    if (Math.abs(colDifference) !== 1) {// if there is no columns difference, or it is different than one, 
+        return false;
+    }
+
+    let direction;
+    if (colDifference > 0){
+        direction = isWhite ? "left" : "right";
+    } else if (colDifference < 0){
+        direction = isWhite ? "right" : "left";
+    }
+
+    const indexesNextToPawn = MoveUtils.getIndexesInDirection(piece, direction);
+
+    
+    const domElementNextToPawn = DomUtils.getDOMElementsFromIndexes(indexesNextToPawn, game);
+    // now check if on the square is the pawn, which just made double move -> his class should be:
+    // "oppositeColor piece pawn jumped now"
+    const oppositeColor = isWhite ? "black" : "white";
+    if (!(squareNextToPawn.className === `${oppositeColor} piece pawn jumped now`)) {
+        return false;
+    }
+
+    return true;
 }

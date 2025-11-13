@@ -110,7 +110,6 @@ window.onload = function () {
                 if (thisIsPawnsSpecialMove(piece, legalMove)) {// if yes, mark the pawn, for en passant purposes
                     piece.classList.add("jumped");
                 }
-
                 // we gotta check if this is not a PROMOTION of a pawn
                 if (thisIsPawnPromotionMove(piece, legalMove)) {
                     moveAndPromote(piece, legalMove);

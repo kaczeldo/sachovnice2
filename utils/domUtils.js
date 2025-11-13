@@ -14,21 +14,30 @@ export function getDOMPiece(rowIndex, colIndex) {
     if (rowIndex === null || colIndex === null || rowIndex > 7 || rowIndex < 0 || colIndex > 7 || colIndex < 0) {
         return null;
     }
-    return boardRows[rowIndex].children[colIndex].firstElementChild;
+    return Globals.boardRows[rowIndex].children[colIndex].firstElementChild;
 }
 
 // converts normal pieces to actual DOM pieces
 export function getDOMPiecesFromPieces(pieces) {
     let domPieces = [];
     for (let piece of pieces) {
-        const [r, c] = piece.coordinates.toIndex();
-        const domPiece = getDOMPiece(r, c);
+        const domPiece = getDOMPieceFromPiece(piece);
         if (domPiece) {
             domPieces.push(domPiece);
         }
     }
 
     return domPieces;
+}
+
+export function getDOMPieceFromPiece(piece) {
+    const [r, c] = piece.coordinates.toIndex();
+    const domPiece = getDOMPiece(r, c);
+    if (domPiece) {
+        return domPiece;
+    }
+
+    return null;
 }
 
 // returns index of the column of the piece
@@ -49,8 +58,8 @@ export function getRowIndex(piece) {
     // lets find the index of the row it is actually on.
     let currentPieceRow = piece.parentElement.parentElement;
     let currentRowIndex = -1;
-    for (let i = 0; i < boardRows.length; i++) {
-        if (boardRows[i] == currentPieceRow) {
+    for (let i = 0; i < Globals.boardRows.length; i++) {
+        if (Globals.boardRows[i] == currentPieceRow) {
             return i;
         }
     }
@@ -58,7 +67,7 @@ export function getRowIndex(piece) {
     return currentRowIndex;
 }
 
-export function getPieceFromIndexes(indexes, game){
+export function getPieceFromIndexes(indexes, game) {
     const row = indexes[0];
     const col = indexes[1];
     for (let piece of game.pieces) {
@@ -93,9 +102,9 @@ export function getPieceFromDOMPiece(domPiece, game) {
     return null;
 }
 
-export function getPiecesFromDOMPieces(domPieces, game){
+export function getPiecesFromDOMPieces(domPieces, game) {
     let newPieces = [];
-    for (let domPiece of domPieces){
+    for (let domPiece of domPieces) {
         newPieces.push(getPieceFromDOMPiece(domPiece, game));
     }
 
@@ -104,9 +113,8 @@ export function getPiecesFromDOMPieces(domPieces, game){
 
 // this function returns DOM elements representing the white pieces
 export function getDOMPieces(game) {
-    const isWhite = game.isWhitesTurn ? true : false;
+    const isWhite = Globals.isWhitesTurn ? true : false;
     const sameColor = isWhite ? "white" : "black";
-    const oppositeColor = isWhite ? "black" : "white";
     let domPieces = [];
     if (game.isWhiteCheck || game.isBlackCheck) {
         statusBarPar.textContent = actualColor + " to play, " + actualColor + " is in CHECK!";
@@ -144,19 +152,22 @@ export function getDOMPieces(game) {
         domPieces = [...new Set(domPieces)];
 
     } else { // if it is not a check
-        statusBarPar.textContent = actualColor + " to play";
-        const actualPieces = getPieces({ color: actualColor }, game);
+        Ui.updateStatusBar(sameColor + " to play 1");
+        const actualPieces = PieceUtils.getPieces({ color: sameColor }, game);
         for (let piece of actualPieces) {
             const pieceIndexes = piece.coordinates.toIndex();
-            domPieces.push(PieceUtils.getDOMPiece(pieceIndexes[0], pieceIndexes[1]));
+            domPieces.push(getDOMPiece(pieceIndexes[0], pieceIndexes[1]));
         }
     }
 
     return domPieces;
 }
 
-export function getDOMElementsFromIndexes(indexes, game){
+export function getDOMElementsFromIndexes(indexes, game) {
     let domElements = [];
-    /// TODO TODO TODO
+    for (let index of indexes) {
+        domElements.push(Globals.boardRows[index[0]].children[index[1]].firstElementChild);
+    }
+    return domElements;
 }
 

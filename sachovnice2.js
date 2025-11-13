@@ -12,7 +12,6 @@ import * as DomUtils from "./utils/domUtils.js";
 window.onload = function () {
     // needed variables
     Ui.initiateStatusBar(document.getElementById("status-bar").firstElementChild);
-    const boardRows = document.getElementsByClassName("board-row");
 
     function startGame() {
         let myGame = new Game();
@@ -23,19 +22,12 @@ window.onload = function () {
         if (Globals.gameOver) {
             return;
         }
-        Globals.domPiecesToPlay = PieceUtils.getDOMPieces(game);
-
-        // set message
-        if (Globals.isWhitesTurn){
-            Ui.updateStatusBar("White to play.");
-        } else {
-            Ui.initiateStatusBar("Black to play.");
-        }        
+        Globals.setDomPiecesToPlay(DomUtils.getDOMPieces(game));      
 
         if (Globals.domPiecesToPlay.length === 1) {//there is only king to play with
-            Globals.thereIsOnlyKingToPlayWith = true;
+            Globals.setOnlyKingToPlay(true);
         } else {
-            Globals.thereIsOnlyKingToPlayWith = false;
+            Globals.setOnlyKingToPlay(false);
         }
 
         for (let domPiece of Globals.domPiecesToPlay) {
@@ -45,9 +37,10 @@ window.onload = function () {
 
     function handlePieceClick(event, game) {
         const domPiece = event.target;
-        const piece = PieceUtils.getPieceFromDOMPiece(domPiece);
+        const piece = DomUtils.getPieceFromDOMPiece(domPiece, game);
         const isWhite = piece.color === "white";
         const opponentColor = isWhite ? "black" : "white";
+        const sameColor = isWhite ? "white" : "black";
 
         domPiece.addEventListener("click", function cancelHandler(ev) {
             ev.preventDefault();
@@ -55,14 +48,14 @@ window.onload = function () {
             startTurn();
         }, { once: true });
 
-        const oponnentPieces = PieceUtils.getPieces({ color: opponentColor }, game);
-        const domPieces = PieceUtils.getDOMPiecesFromPieces(oponnentPieces);
-        for (let oponnentPiece of domPieces) {
-            oponnentPiece.addEventListener("click", function cancelDiffHandler(ev) {
+        const friendlyPieces = PieceUtils.getPieces({ color: sameColor }, game);
+        const domPieces = DomUtils.getDOMPiecesFromPieces(friendlyPieces);
+        for (let friendlyPiece of domPieces) {
+            friendlyPiece.addEventListener("click", function cancelDiffHandler(ev) {
                 ev.preventDefault();
                 GameUtils.cleanUp(game);
                 startTurn();
-                handlePieceClick({ target: oponnentPiece });
+                handlePieceClick({ target: friendlyPiece });
             }, { once: true });
         }
 
@@ -84,13 +77,12 @@ window.onload = function () {
             legalMove.addEventListener("click", function moveHandler(event) {
                 event.preventDefault();
 
-                if (thisIsPawnSpecialMove(piece, legalMove, game)) {
+                if (ConditionUtils.thisIsPawnSpecialMove(piece, legalMove, game)) {
                     piece.hasDoubleJumped = true;
                 }
-
-                if (thisIsPawnPromotionMove(piece, legalMove, game)) {
-                    moveAndPromote(piece, legalMove, game);
-                } else if (thisIsEnPassantMove(piece, legalMove, game)) {
+                if (ConditionUtils.thisIsPawnPromotionMove(piece, legalMove)) {
+                    GameUtils.moveAndPromote(piece, legalMove, game);
+                } else if (ConditionUtils.thisIsEnPassantMove(piece, legalMove, game)) {
                     enPassant(piece, legalMove, game);
                 } else if (thisIsCastleMove(piece, legalMove, game)) {
                     castle(piece, legalMove, game);

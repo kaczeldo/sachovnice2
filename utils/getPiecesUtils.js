@@ -65,3 +65,7 @@ export function getCheckingPieces(isWhite, game) {
 
     return checkingPieces;
 }
+
+export function getPieceFromIndexes(indexes, game){
+    // todo TODO
+}
