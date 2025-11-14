@@ -68,7 +68,7 @@ window.onload = function () {
 
         // convert legalMoves - which currently are just indexes of legal moves, 
         // to actual dom elements
-        let legalDomMoves = DomUtils.getDOMElementsFromIndexes(legalMoves, game);
+        let legalDomMoves = DomUtils.getDOMElementsFromIndexes(legalMoves);
         // HIGHLIGHT EMPTY-SQUARE MOVES
         legalDomMoves = Ui.highlightMoves(legalDomMoves, game);
 
@@ -83,18 +83,18 @@ window.onload = function () {
                 if (ConditionUtils.thisIsPawnPromotionMove(piece, legalMove)) {
                     GameUtils.moveAndPromote(piece, legalMove, game);
                 } else if (ConditionUtils.thisIsEnPassantMove(piece, legalMove, game)) {
-                    enPassant(piece, legalMove, game);
-                } else if (thisIsCastleMove(piece, legalMove, game)) {
-                    castle(piece, legalMove, game);
+                    GameUtils.enPassant(piece, legalMove, game);
+                } else if (ConditionUtils.thisIsCastleMove(piece, legalMove)) {
+                    GameUtils.castle(piece, legalMove, game);
                 } else {
-                    moveToSquare(piece, legalMove, game);
+                    GameUtils.moveToSquare(piece, legalMove);
                 }
 
                 // after the move, put down check flags
                 Globals.isWhiteInCheck = false;
                 Globals.isBlackInCheck = false;
 
-                let nrOfCheckingPieces = isCheck();
+                const nrOfCheckingPieces = ConditionUtils.isCheck(game);
 
                 if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
                     Globals.isWhiteInCheck = true;
@@ -108,9 +108,12 @@ window.onload = function () {
                     Globals.isDoubleCheck = false;
                 }
 
+                /* instead of what is below, implement endTurn function which will also updat the chess board!
                 Globals.isWhitesTurn = !(Globals.isWhitesTurn);
 
                 cleanUp();
+                */
+               GameUtils.endTurn(game); // TOOODOOO !!!
 
                 startTurn(game);
             }, { once: true });

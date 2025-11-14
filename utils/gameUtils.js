@@ -157,3 +157,129 @@ export function moveAndPromote(piece, legalMove, game) {
         }, { once: true });
     }
 }
+
+export function enPassant(piece, legalMove, game) {
+    const isWhite = piece.color === "white";
+    const [_, col] = piece.coordinates.toIndex();
+    const colDifference = col - DomUtils.getColumnsIndex(legalMove);
+
+    let direction;
+    if (colDifference > 0) {
+        direction = isWhite ? "left" : "right";
+    } else if (colDifference < 0) {
+        direction = isWhite ? "right" : "left";
+    }
+
+    const indexesNextToPawn = MoveUtils.getIndexesInDirection(piece, direction);
+    if (indexesNextToPawn === null) {
+        console.error("In enPassant function, could not get indexes next to pawn in give direction: " + direction + " and the pawn is on: " + pawn.coordinates);
+        return null;
+    }
+    const pieceNextToPawn = PieceUtils.getPieceFromIndexes(indexesNextToPawn, game);
+    if (pieceNextToPawn === null) {
+        console.error("In enPassant function, could not get piece next to pawn in give direction: " + direction + " and the pawn is on: " + pawn.coordinates);
+        return null;
+    }
+
+    const squareNextToPawn = DomUtils.getDOMPieceFromPiece(pieceNextToPawn);
+
+    let squareElement = document.createElement("span");
+    squareElement.className = "square";
+    let squareElement2 = document.createElement("span");
+    squareElement2.className = "square";
+
+    const domPiece = DomUtils.getDOMPieceFromPiece(piece);
+    // part 1: move the piece to legalMove square
+    domPiece.parentElement.appendChild(squareElement);
+    domPiece.parentElement.removeChild(domPiece);
+    legalMove.parentElement.appendChild(domPiece);
+    legalMove.parentElement.removeChild(legalMove);
+
+    // part 2: remove the pawn next to our piece, move it to array for taken pieces
+    squareNextToPawn.parentElement.appendChild(squareElement2);
+    squareNextToPawn.parentElement.removeChild(squareNextToPawn);
+    addPieceToRemovedArray(squareNextToPawn);
+
+    // actual PIECE classes updates
+    // 1. change coordinates of the piece
+    piece.moveTo([DomUtils.getRowIndex(legalMove), DomUtils.getColumnsIndex(legalMove)]);
+    // 2. mark the taken piece, the one next to the pawn, as taken
+    pieceNextToPawn.take();
+}
+
+export function addPieceToRemovedArray(piece) {
+    let isWhite = piece.classList.contains("white");
+
+    if (isWhite) {
+        let takenWhitePiecesDiv = document.getElementById("taken-white-pieces");
+        takenWhitePiecesDiv.appendChild(piece);
+    } else {
+        let takenBlackPiecesDiv = document.getElementById("taken-black-pieces");
+        takenBlackPiecesDiv.appendChild(piece);
+    }
+    piece.className = "col-1-8";
+}
+
+export function castle(piece, legalMove, game) {
+    const isWhite = piece.color === "white";
+    const myColor = isWhite ? "white" : "black";
+    const [row, col] = piece.coordinates.toIndex();
+    const colDiff = col - getColumnsIndex(legalMove);
+    // find direction
+    let direction;
+    if (colDiff > 0) {
+        direction = isWhite ? "left" : "right";
+    } else if (colDiff < 0) {
+        direction = isWhite ? "right" : "left";
+    }
+
+    //get correct rook
+    const rooks = PieceUtils.getPieces({ color: myColor, type: "rook" }, game);
+    const [_, r1Col] = rooks[0].coordinates.toIndex();
+    const rooksCol = isWhite ? ((direction === "left") ? 0 : 7) : ((direction === "left") ? 7 : 0);
+    const theRook = (r1Col === rooksCol) ? rooks[0] : rooks[1];
+
+    const firstInDirection = MoveUtils.getIndexesInDirection(piece, direction);
+    const secondInDirection = MoveUtils.getIndexesInDirectionFromSquare(firstInDirection, isWhite, direction);
+    const firstDom = DomUtils.getDOMPiece(firstInDirection[0], firstInDirection[1]);
+    const sndDom = DomUtils.getDOMPiece(secondInDirection[0], secondInDirection[1]);
+
+    moveToSquare(theRook, firstDom);
+    // then get the second square in that direction -> move the king to that square
+    moveToSquare(piece, sndDom);
+}
+
+export function moveToSquare(piece, legalMove) {
+    // this will be useful
+    const isWhite = piece.color === "white";
+    const oppositeColor = isWhite ? "black" : "white";
+    const domPiece = DomUtils.getDOMPieceFromPiece(piece);
+    const newIndexes = [DomUtils.getRowIndex(legalMove), DomUtils.getColumnsIndex(legalMove)];
+
+    let squareElement = document.createElement("span");
+    squareElement.className = "square";
+
+    // lets check if there is highlighter
+    if (legalMove.classList.contains("highlighter")) {
+        domPiece.parentElement.appendChild(squareElement);
+        domPiece.parentElement.removeChild(domPiece);
+        legalMove.parentElement.appendChild(domPiece);
+        legalMove.parentElement.removeChild(legalMove);        
+        // move the piece:
+        
+        
+    } else if (legalMove.classList.contains(oppositeColor)) {// if it is opponents piece
+        domPiece.parentElement.appendChild(squareElement);
+        domPiece.parentElement.removeChild(domPiece);
+        legalMove.parentElement.appendChild(domPiece);
+        legalMove.parentElement.removeChild(legalMove);
+        
+        addPieceToRemovedArray(legalMove);
+
+        // take the piece on legalMove indexes
+        const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes);
+        takenPiece.take();
+    }
+
+    piece.moveTo(newIndexes);
+}

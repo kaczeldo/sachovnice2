@@ -67,5 +67,12 @@ export function getCheckingPieces(isWhite, game) {
 }
 
 export function getPieceFromIndexes(indexes, game){
-    // todo TODO
+    for (let piece of game.pieces){
+        const pIndexes = piece.coordinates.toIndex();
+        if (pIndexes === indexes){
+            return piece;
+        }
+    }
+
+    return null;
 }

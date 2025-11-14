@@ -67,17 +67,6 @@ export function getRowIndex(piece) {
     return currentRowIndex;
 }
 
-export function getPieceFromIndexes(indexes, game) {
-    const row = indexes[0];
-    const col = indexes[1];
-    for (let piece of game.pieces) {
-        const [pRow, pCol] = piece.coordinates.toIndex();
-        if (pRow === row && pCol === col) return piece;
-    }
-
-    return null;
-}
-
 /**
  * Opposite to getDomPiece, this function takes domPiece and returns indexes of normal piece
  * @param {*} domPiece provided domPiece
@@ -163,7 +152,7 @@ export function getDOMPieces(game) {
     return domPieces;
 }
 
-export function getDOMElementsFromIndexes(indexes, game) {
+export function getDOMElementsFromIndexes(indexes) {
     let domElements = [];
     for (let index of indexes) {
         domElements.push(Globals.boardRows[index[0]].children[index[1]].firstElementChild);

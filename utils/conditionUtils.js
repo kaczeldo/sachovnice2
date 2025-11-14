@@ -145,7 +145,7 @@ export function thisIsPawnSpecialMove(piece, legalMove, game) {
     // lastly, check if the legal move is the '2nd front element'.
     const front = MoveUtils.getIndexesInDirection(piece, "front");
     const doubleFront = MoveUtils.getIndexesInDirectionFromSquare(front, isWhite, "front");
-    const domElement = DomUtils.getDOMElementsFromIndexes(doubleFront, game);
+    const domElement = DomUtils.getDOMElementsFromIndexes(doubleFront);
 
     if (domElement !== legalMove) {
         return false;
@@ -166,12 +166,6 @@ export function thisIsPawnPromotionMove(piece, legalMove) {
 }
 
 export function thisIsEnPassantMove(piece, legalMove, game) {
-    /*
-        Conditions:
-        a) piece is pawn
-        b) the move is to diagonal from the pawn, and there is no piece there
-        c) next to it, in the direction of the legal move, there is pawn which just made double move
-        */
     const isWhite = piece.color === "white";
 
     if (piece.type !== "pawn") {
@@ -185,22 +179,54 @@ export function thisIsEnPassantMove(piece, legalMove, game) {
     }
 
     let direction;
-    if (colDifference > 0){
+    if (colDifference > 0) {
         direction = isWhite ? "left" : "right";
-    } else if (colDifference < 0){
+    } else if (colDifference < 0) {
         direction = isWhite ? "right" : "left";
     }
 
     const indexesNextToPawn = MoveUtils.getIndexesInDirection(piece, direction);
+    if (indexesNextToPawn === null) {
+        return false;
+    }
+    const pieceNextToPawn = PieceUtils.getPieceFromIndexes(indexesNextToPawn, game);
+    if (pieceNextToPawn === null) {
+        return false;
+    }
 
-    
-    const domElementNextToPawn = DomUtils.getDOMElementsFromIndexes(indexesNextToPawn, game);
-    // now check if on the square is the pawn, which just made double move -> his class should be:
-    // "oppositeColor piece pawn jumped now"
-    const oppositeColor = isWhite ? "black" : "white";
-    if (!(squareNextToPawn.className === `${oppositeColor} piece pawn jumped now`)) {
+    if (pieceNextToPawn.hasDoubleJumped && pieceNextToPawn.hasDoubleJumpedNow) {
+        return true;
+    }
+
+    return false;
+}
+
+export function thisIsCastleMove(piece, legalMove) {
+    if (piece.type !== "king") {
+        return false;
+    }
+
+    const [kRow, kCol] = piece.coordinates.toIndex();
+    // else we gotta check if the move is 
+    // a) on the same row
+    // b) difference of the cols is two
+    if (kRow !== getRowIndex(legalMove)) {
+        return false;
+    }
+
+    const colDiff = Math.abs(kCol - (getColumnsIndex(legalMove)));
+    if (colDiff !== 2) {
         return false;
     }
 
     return true;
+}
+
+export function isCheck(game) {
+    const nrOfCheckingPieces = PieceUtils.getCheckingPieces(Globals.isWhitesTurn, game);
+    if (nrOfCheckingPieces > 0){
+        return true;
+    }
+
+    return false;
 }
