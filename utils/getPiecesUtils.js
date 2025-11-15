@@ -52,7 +52,7 @@ export function getCheckingPieces(isWhite, game) {
     let checkingPieces = [];
     const sameColor = isWhite ? "white" : "black";
     const oppositeColor = isWhite ? "black" : "white";
-    const oponentsKing = getPieces({ color: oppositeColor, type: "king" }, game).item(0);
+    const oponentsKing = getPieces({ color: oppositeColor, type: "king" }, game)[0];
     const friendlyPieces = getPieces({ color: sameColor }, game);
 
     let pieceAttackingMoves;
@@ -75,4 +75,15 @@ export function getPieceFromIndexes(indexes, game){
     }
 
     return null;
+}
+
+export function getIndexesFromAllPieces(game){
+    let indexes = [];
+    for (let piece of game.pieces){
+        if(!(piece.wasTaken)){
+            indexes.push(piece.coordinates.toIndex());
+        }        
+    }
+
+    return indexes;
 }

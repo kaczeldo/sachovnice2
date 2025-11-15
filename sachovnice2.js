@@ -45,7 +45,7 @@ window.onload = function () {
         domPiece.addEventListener("click", function cancelHandler(ev) {
             ev.preventDefault();
             GameUtils.cleanUp(game);
-            startTurn();
+            startTurn(game);
         }, { once: true });
 
         const friendlyPieces = PieceUtils.getPieces({ color: sameColor }, game);
@@ -87,25 +87,25 @@ window.onload = function () {
                 } else if (ConditionUtils.thisIsCastleMove(piece, legalMove)) {
                     GameUtils.castle(piece, legalMove, game);
                 } else {
-                    GameUtils.moveToSquare(piece, legalMove);
+                    GameUtils.moveToSquare(piece, legalMove, game);
                 }
 
                 // after the move, put down check flags
-                Globals.isWhiteInCheck = false;
-                Globals.isBlackInCheck = false;
+                Globals.setIsWhiteInCheck(false);
+                Globals.setIsBlackInCheck(false);
 
                 const nrOfCheckingPieces = ConditionUtils.isCheck(game);
 
                 if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
-                    Globals.isWhiteInCheck = true;
+                    Globals.setIsWhiteInCheck(true);
                 } else if ((!(Globals.isWhitesTurn)) && nrOfCheckingPieces > 0) {
-                    Globals.isBlackInCheck = true;
+                    Globals.setIsBlackInCheck(true);
                 }
 
                 if (nrOfCheckingPieces >= 2) {
-                    Globals.isDoubleCheck = true;
+                    Globals.setIsDoubleCheck(true);
                 } else {
-                    Globals.isDoubleCheck = false;
+                    Globals.setIsDoubleCheck(false);
                 }
 
                 /* instead of what is below, implement endTurn function which will also updat the chess board!

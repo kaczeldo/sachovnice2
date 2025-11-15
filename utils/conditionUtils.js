@@ -130,7 +130,7 @@ export function castlesIsPossible(king, rook) {
 }
 
 export function thisIsPawnSpecialMove(piece, legalMove, game) {
-    const isWhite = piece.classList.contains("white");
+    const isWhite = piece.color === "white";
 
     // first check if the piece is pawn
     if (!(piece.type === "pawn")) {//if not
@@ -145,7 +145,11 @@ export function thisIsPawnSpecialMove(piece, legalMove, game) {
     // lastly, check if the legal move is the '2nd front element'.
     const front = MoveUtils.getIndexesInDirection(piece, "front");
     const doubleFront = MoveUtils.getIndexesInDirectionFromSquare(front, isWhite, "front");
-    const domElement = DomUtils.getDOMElementsFromIndexes(doubleFront);
+    if (doubleFront === null){
+        console.error("Could not get double fron indexes. Maybe front are bad? " + front);
+        return;
+    }
+    const domElement = DomUtils.getDOMElementFromIndex(doubleFront);
 
     if (domElement !== legalMove) {
         return false;
@@ -158,7 +162,7 @@ export function thisIsPawnPromotionMove(piece, legalMove) {
     const isWhite = piece.color === "white";
     const lastRowsIndex = isWhite ? 0 : 7;
 
-    if (piece.type === "pawn" && getRowIndex(legalMove) === lastRowsIndex) {
+    if (piece.type === "pawn" && DomUtils.getRowIndex(legalMove) === lastRowsIndex) {
         return true;
     }
 
@@ -173,7 +177,7 @@ export function thisIsEnPassantMove(piece, legalMove, game) {
     }
 
     const [_, col] = piece.coordinates.toIndex();
-    const colDifference = col - getColumnsIndex(legalMove);
+    const colDifference = col - DomUtils.getColumnsIndex(legalMove);
     if (Math.abs(colDifference) !== 1) {// if there is no columns difference, or it is different than one, 
         return false;
     }

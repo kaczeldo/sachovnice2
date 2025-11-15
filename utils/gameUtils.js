@@ -9,7 +9,7 @@ import { Piece } from "../classes/piece.js";
 import { Game } from "../classes/game.js";
 import * as Globals from "../classes/globals.js";
 
-export function cleanUp() {
+export function cleanUp(game) {
     // remove highlighters
     let highlighters = document.querySelectorAll(".highlighter");
 
@@ -33,6 +33,11 @@ export function cleanUp() {
 
     // remove all event listeners
     document.querySelectorAll(".piece").forEach(removeAllEventListeners);
+}
+
+function removeAllEventListeners(element) {
+    let newEl = element.cloneNode(true);
+    element.parentNode.replaceChild(newEl, element);
 }
 
 export function moveAndPromote(piece, legalMove, game) {
@@ -244,12 +249,12 @@ export function castle(piece, legalMove, game) {
     const firstDom = DomUtils.getDOMPiece(firstInDirection[0], firstInDirection[1]);
     const sndDom = DomUtils.getDOMPiece(secondInDirection[0], secondInDirection[1]);
 
-    moveToSquare(theRook, firstDom);
+    moveToSquare(theRook, firstDom, game);
     // then get the second square in that direction -> move the king to that square
-    moveToSquare(piece, sndDom);
+    moveToSquare(piece, sndDom, game);
 }
 
-export function moveToSquare(piece, legalMove) {
+export function moveToSquare(piece, legalMove, game) {
     // this will be useful
     const isWhite = piece.color === "white";
     const oppositeColor = isWhite ? "black" : "white";
@@ -264,22 +269,109 @@ export function moveToSquare(piece, legalMove) {
         domPiece.parentElement.appendChild(squareElement);
         domPiece.parentElement.removeChild(domPiece);
         legalMove.parentElement.appendChild(domPiece);
-        legalMove.parentElement.removeChild(legalMove);        
+        legalMove.parentElement.removeChild(legalMove);
         // move the piece:
-        
-        
+
+
     } else if (legalMove.classList.contains(oppositeColor)) {// if it is opponents piece
         domPiece.parentElement.appendChild(squareElement);
         domPiece.parentElement.removeChild(domPiece);
         legalMove.parentElement.appendChild(domPiece);
         legalMove.parentElement.removeChild(legalMove);
-        
+
         addPieceToRemovedArray(legalMove);
 
         // take the piece on legalMove indexes
-        const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes);
+        const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes, game);
         takenPiece.take();
     }
 
     piece.moveTo(newIndexes);
+}
+
+export function endTurn(game) {
+    /**
+     * what must happen when the turn has come to an end:
+     * 1. Change colors
+     * 2. Update the chessboard based on the piece statuses and coordinations
+     * 3. Clean up highlighters, etc.
+     */
+    Globals.setIsWhitesTurn(!(Globals.isWhitesTurn));
+
+    updateChessBoard(game);
+
+    cleanUp(game);
+}
+
+function updateChessBoard(game) {
+    /**
+     * There are two basic things to handle:
+     * 1. Go through all pieces and remove the pieces from the board, which have isTaken set to true
+     * 2. Go through all pieces and based ond their coordinates, update their position on the chessboard
+     *  a) detect symbols which do not correspond to any of the pieces - remove them
+     *  b) go through pieces and check if they are on the board, if not add them
+     */
+    const allPieces = game.pieces;
+    for (let piece of allPieces) {
+        const symbol = PieceUtils.getSymbolForPiece(piece);
+        const [r, c] = piece.coordinates.toIndex();
+        const onBoard = game.chessBoard[r][c];
+        if (piece.wasTaken && !(piece.wasRemoved)) {
+            if (symbol === onBoard) {
+                game.chessBoard[r][c] = "s";
+            }
+            piece.coordinates.change(8, 8); // set coordinates to unreal coordinates
+            piece.wasRemoved = true;
+        } else if (piece.wasTaken) {
+            // do nothing - should be solved
+        } else if (symbol !== onBoard) { // then we are working with active pieces
+            game.chessBoard[r][c] = symbol;
+        }
+    }
+
+    // now go through each chess board square and find non-empty squares
+    let nonEmptyIndexes = [];
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            const onBoard = game.chessBoard[i][j];
+            if (onBoard !== "s") {
+                nonEmptyIndexes.push([i, j]);
+            }
+        }
+    }
+
+    // each non empty square must correspond with an active piece
+    let activePieces = [];
+    for (let piece of allPieces) {
+        if (!(piece.wasTaken)) {
+            activePieces.push(piece);
+        }
+    }
+    for (let piece of activePieces) {
+        const [r, c] = piece.coordinates.toIndex();
+        const symbol = PieceUtils.getSymbolForPiece(piece);
+
+        const exists = nonEmptyIndexes.some(([nr, nc]) => nr === r && nc === c);
+
+        if (exists && game.chessBoard[r][c] === symbol) {
+            nonEmptyIndexes = nonEmptyIndexes.filter(([mR, mC]) => !((mR === r) && (mC === c)));
+        }
+    }
+
+    // now we are left with the non empty indexes, which are not corresponding with and piece -> change them to "s"
+    for (const [r, c] of nonEmptyIndexes) {
+        game.chessBoard[r][c] = "s";
+    }
+
+    showBoard(game);
+}
+
+function showBoard(game) {
+    for (let i = 0; i < 8; i++) {
+        let row = ""
+        for (let j = 0; j < 8; j++) {
+            row = row + game.chessBoard[i][j] + " ";
+        }
+        console.log(row);
+    }
 }

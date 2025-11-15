@@ -16,6 +16,7 @@ export class Piece {
         this.hasMoved = false;
         this.hasDoubleJumped = false;
         this.hasDoubleJumpedNow = false;
+        this.wasRemoved = false; // answers if the piece was removed from the board.
     }
 
     moveTo(indexes){

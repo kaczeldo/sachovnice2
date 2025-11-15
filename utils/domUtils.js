@@ -160,3 +160,6 @@ export function getDOMElementsFromIndexes(indexes) {
     return domElements;
 }
 
+export function getDOMElementFromIndex(index) {
+    return Globals.boardRows[index[0]].children[index[1]].firstElementChild;
+}

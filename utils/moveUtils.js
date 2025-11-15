@@ -31,6 +31,7 @@ export function tryPushMove(legalMoves, directionFn, game, oppositeColorSymbol) 
 
 // Same as function "tryPushMove" with one big difference -> it will push the move also if there is piece of the same color.
 export function tryPushNeutralMove(theMoves, directionFn, game) {
+    console.log(directionFn);
     const indexes = directionFn();
     if (!indexes) return;
 
@@ -130,15 +131,15 @@ function getLegalPawnMoves(piece, game) {
     }
 
     // check diagonals
-    const topLeftIndexes = getIndexesInDirection(piece, "top-left"); 
+    const topLeftIndexes = getIndexesInDirection(piece, "top-left");
     const topLeftSymbol = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
     const topRightIndexes = getIndexesInDirection(piece, "top-right");
     const topRightSymbol = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
     console.log("diagonal symbols for pawn: " + topLeftSymbol + topRightSymbol);
-    if(topLeftSymbol === oppositeColorSymbol){
+    if (topLeftSymbol === oppositeColorSymbol) {
         legalMoves.push(topLeftIndexes);
     }
-    if(topRightSymbol === oppositeColorSymbol){
+    if (topRightSymbol === oppositeColorSymbol) {
         legalMoves.push(topRightIndexes);
     }
     /*
@@ -201,7 +202,7 @@ function getLegalKnightMoves(piece, game) {
     let isWhite = piece.color === "white";
     let oppositeColorSymbol = isWhite ? "B" : "W";
 
-    const possiblePinnedMovesIndexes = pieceIsPinned(piece, game);
+    const possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     if (possiblePinnedMovesIndexes !== null) {// knight cannot move if its pinned -> return empty array;
         return [];
     }
@@ -224,7 +225,7 @@ function getLegalBishopMoves(piece, game) {
     let legalMoves = [];
     const isWhite = piece.color === "white";
     // before we start checking normal moves, check if you are not pinned
-    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(bishop);
+    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     let isThePiecePinned = false;
     if (possiblePinnedMovesIndexes !== null) {
         isThePiecePinned = true;
@@ -257,7 +258,7 @@ function getLegalRookMoves(piece, game) {
     let legalMoves = [];
     const isWhite = piece.color === "white";
     // before we start checking normal moves, check if you are not pinned
-    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece);
+    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     let isThePiecePinned = false;
     if (possiblePinnedMovesIndexes !== null) {
         isThePiecePinned = true;
@@ -290,7 +291,7 @@ function getLegalQueenMoves(piece, game) {
     let legalMoves = [];
     const isWhite = piece.color === "white";
     // before we start checking normal moves, check if you are not pinned
-    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece);
+    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     let isThePiecePinned = false;
     if (possiblePinnedMovesIndexes !== null) {
         isThePiecePinned = true;
@@ -515,7 +516,7 @@ export function getIndexesInDirection(piece, direction) {
     const [dRow, dCol] = delta;
     const newRow = row + dRow;
     console.log("The calulated new row is: " + newRow);
-    
+
     const newCol = col + dCol;
 
     console.log("The calulated new col is: " + newCol);
@@ -601,9 +602,21 @@ function getPawnMoves(piece, game) {
     // check normal front move - NO - we do not need it, we need only defending and attacking moves
 
     // check diagonals
-    tryPushNeutralMove(theMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game);
-    tryPushNeutralMove(theMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game);
+    const topLeft = getIndexesInDirection(piece, "top-left");
+    if (topLeft !== null) {
+        const topLeftSymbol = game.chessBoard[topLeft[0]][topLeft[1]];
+        if (topLeftSymbol.includes("W") || topLeftSymbol.includes("B")) {
+            theMoves.push(topLeft);
+        }
+    }
 
+    const topRight = getIndexesInDirection(piece, "top-right");
+    if (topRight !== null) {
+        const topRightSymbol = game.chessBoard[topRight[0]][topRight[1]];
+        if (topRightSymbol.includes("W") || topRightSymbol.includes("B")) {
+            theMoves.push(topRight);
+        }
+    }
 
     // check en passant - NO, we do not need it. 
     return theMoves;
@@ -728,7 +741,7 @@ export function getLegalCheckMoves(piece, game) {
     }
 
     // if we are looking at kings moves, return normal legal moves
-    if (piece.type === "king"){
+    if (piece.type === "king") {
         return legalMoves;
     }
 
@@ -758,7 +771,7 @@ export function getLegalCheckMoves(piece, game) {
     }
 
     const squaresBetweenKingAndChecker = getSquaresBetweenKingAndChecker(king, checkingPieces[0], game);
-    
+
 
     // go through each move and check if it lays on the line between attacker and king. If yes, add it.
     for (let potentialMove of legalMoves) {
