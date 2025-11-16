@@ -105,36 +105,40 @@ export function getDOMPieces(game) {
     const isWhite = Globals.isWhitesTurn ? true : false;
     const sameColor = isWhite ? "white" : "black";
     let domPieces = [];
-    if (game.isWhiteCheck || game.isBlackCheck) {
-        statusBarPar.textContent = actualColor + " to play, " + actualColor + " is in CHECK!";
+    if ((Globals.isWhitesTurn && Globals.isWhiteInCheck) || (!(Globals.isWhitesTurn) && Globals.isBlackInCheck)) {
+        Ui.updateStatusBar(sameColor + " is in Check!!");
         // add only pieces which can play in check
         // add king - this is always true
-        domPieces.push(...getPieces({ color: actualColor, type: "king" }, game));
+        const domKing = getDOMPieceFromPiece(PieceUtils.getPieces({color: sameColor, type: "king"}, game)[0]);
+        domPieces.push(domKing);
 
-        if (game.isDoubleCheck) {
+        if (Globals.isDoubleCheck) {
             return domPieces;
         }
 
         // first find the pieces which are giving check
-        let checkingPieces = getCheckingPieces(!(isWhite), game);
+        const checkingPieces = PieceUtils.getCheckingPieces(!(isWhite), game);
+        console.log("The checking pieces: " + checkingPieces[0]);
         // check if this is only one piece -> must be
-        if (!(checkingPieces.length === 1)) {
+        if (checkingPieces.length !== 1) {
             return null;
         }
 
+        console.log("I am here");
         // now add pieces which can block the check
-        let checkBlockingPieces = getCheckBlockingPieces(game, checkingPieces);
+        const checkBlockingPieces = PieceUtils.getCheckBlockingPieces(game, checkingPieces);
         if (checkBlockingPieces === null) {
             return null;
         } else {
-            domPieces.push(...checkBlockingPieces);
+            // convert obtained pieces to dom pieces
+            domPieces.push(...(getDOMPiecesFromPieces(checkBlockingPieces)));
         }
 
-        let checkerTakingPieces = getCheckerTakingPieces(game, checkingPieces);
+        const checkerTakingPieces = PieceUtils.getCheckerTakingPieces(game, checkingPieces);
         if (checkerTakingPieces === null) {
             return null;
         } else {
-            domPieces.push(...checkerTakingPieces);
+            domPieces.push(...(getDOMPiecesFromPieces(checkerTakingPieces)));
         }
 
         // avoid duplicities

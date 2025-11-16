@@ -132,14 +132,22 @@ function getLegalPawnMoves(piece, game) {
 
     // check diagonals
     const topLeftIndexes = getIndexesInDirection(piece, "top-left");
-    const topLeftSymbol = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
-    const topRightIndexes = getIndexesInDirection(piece, "top-right");
-    const topRightSymbol = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
-    console.log("diagonal symbols for pawn: " + topLeftSymbol + topRightSymbol);
-    if (topLeftSymbol === oppositeColorSymbol) {
+    let topLeftSymbol;
+    if (topLeftIndexes !== null){
+        topLeftSymbol = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
+    }
+
+    if (topLeftSymbol && topLeftSymbol.includes(oppositeColorSymbol)) {
         legalMoves.push(topLeftIndexes);
     }
-    if (topRightSymbol === oppositeColorSymbol) {
+
+    const topRightIndexes = getIndexesInDirection(piece, "top-right");
+    let topRightSymbol;
+    if (topRightIndexes !== null){
+        topRightSymbol = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
+    }
+    
+    if (topRightSymbol && topRightSymbol.includes(oppositeColorSymbol)) {
         legalMoves.push(topRightIndexes);
     }
     /*
@@ -333,32 +341,38 @@ function getLegalKingMoves(piece, game) {
     const isWhite = piece.color == "white";
     const oppositeColor = isWhite ? "black" : "white";
     const sameColor = isWhite ? "white" : "black";
+    const oppositeColorSymbol = isWhite ? "B" : "W";
 
     let directions = ["front", "top-right", "right", "bottom-right", "back", "bottom-left", "left", "top-left"];
     let nextElement;
     for (let direction of directions) {
         nextElement = getIndexesInDirection(piece, direction);
-
+        let nextElementSymbol;
         if (nextElement === null) {
-            // do nothing
-        } else if (game.chessBoard[nextElement[0]][nextElement[1]] === "s" && !(ConditionUtils.isAttacked(nextElement, !(isWhite), game))) {
+            continue;
+        } else {
+            nextElementSymbol = game.chessBoard[nextElement[0]][nextElement[1]];
+        }
+
+        if (nextElementSymbol === "s" && !(ConditionUtils.isAttacked(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
-        } else if (nextElement.classList.contains(oppositeColor) && !(ConditionUtils.isDefended(nextElement, !(isWhite), game))) {
+        } else if (nextElementSymbol.includes(oppositeColorSymbol) && !(ConditionUtils.isDefended(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
         }
     }
 
     // here we will check if castles is possible
     const rooks = PieceUtils.getPieces({ color: sameColor, type: "rook" }, game);
-
-    if (ConditionUtils.castlesIsPossible(king, rooks[0])) {
-        const castle1 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, "left")), isWhite, "left");
+    let rookDirection = isWhite ? "left" : "right";
+    if (ConditionUtils.castlesIsPossible(piece, rooks[0])) {
+        const castle1 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, rookDirection)), isWhite, rookDirection);
         possibleMoves.push(castle1);
 
     }
 
-    if (ConditionUtils.castlesIsPossible(king, rooks[1])) {
-        const castle2 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, "right")), isWhite, "right");
+    rookDirection = isWhite ? "right" : "left";
+    if (ConditionUtils.castlesIsPossible(piece, rooks[1])) {
+        const castle2 = getIndexesInDirectionFromSquare((getIndexesInDirection(piece, rookDirection)), isWhite, rookDirection);
         possibleMoves.push(castle2);
     }
 
@@ -389,6 +403,10 @@ export function getLongRangeMoves(currentIndexes, isWhite, direction, game) {
     }
 
     const nextElementSymbol = game.chessBoard[nextElementIndexes[0]][nextElementIndexes[1]];
+    if (nextElementSymbol == null){
+        return legalMoves;
+    }
+
     if (nextElementSymbol === "s") {
         legalMoves.push(nextElementIndexes);
         legalMoves.push(...getLongRangeMoves(nextElementIndexes, isWhite, direction, game));
@@ -455,33 +473,33 @@ function isFriendlyPiece(piece, indexes, game) {
     return pieceSymbol.includes(friendlyColorMark);
 }
 
-export function getAttackingMoves(possibleChecker, game) {
+export function getAttackingMoves(piece, game) {
     let attackingMoves = [];
-    switch (possibleChecker.type) {
+    switch (piece.type) {
         case "pawn":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         case "knight":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         case "bishop":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         case "rook":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         case "queen":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         case "king":
-            attackingMoves = getMoves(possibleChecker, game);
+            attackingMoves = getMoves(piece, game);
             break;
         default:
             console.error("invalid piece type");
             break;
     }
 
-    return attackingMoves.filter(m => isOponentPiece(possibleChecker, m, game));
+    return attackingMoves;
 }
 
 function isOponentPiece(piece, indexes, game) {
@@ -509,17 +527,13 @@ export function getIndexesInDirection(piece, direction) {
 
     const delta = directionMap[direction];
     if (!delta) {
-        console.error("Invalid direction");
         return null;
     }
 
     const [dRow, dCol] = delta;
     const newRow = row + dRow;
-    console.log("The calulated new row is: " + newRow);
-
     const newCol = col + dCol;
 
-    console.log("The calulated new col is: " + newCol);
     if (newRow > 7 || newCol > 7 || newRow < 0 || newCol < 0) {
         return null;
     }
@@ -749,9 +763,9 @@ export function getLegalCheckMoves(piece, game) {
     let legalCheckMoves = [];
 
     const isWhite = piece.color === "white";
-    const sameColor = isWhitesTurn ? "white" : "black";
+    const sameColor = Globals.isWhitesTurn ? "white" : "black";
 
-    const king = PieceUtils.getPieces({ color: sameColor, type: "king" }, game).item(1);
+    const king = PieceUtils.getPieces({ color: sameColor, type: "king" }, game)[0];
 
     const checkingPieces = PieceUtils.getCheckingPieces(!(isWhite), game);
 
@@ -783,7 +797,7 @@ export function getLegalCheckMoves(piece, game) {
     return legalCheckMoves;
 }
 
-function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
+export function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
     const isCheckerWhite = checkingPiece.color === "white";
     const [chR, chC] = checkingPiece.coordinates.toIndex();
     const [kR, kC] = king.coordinates.toIndex();
@@ -812,9 +826,19 @@ function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
 
     let squaresBetween = [];
     // include the checking piece -> possiblity to take the piece
-    squaresBetween.push(checkingPiece);
-    squaresBetween.push(...getLongRangeMoves(checkingPiece, isCheckerWhite, direction, game));
+    squaresBetween.push(checkingPiece.coordinates.toIndex());
+    squaresBetween.push(...getLongRangeMoves(checkingPiece.coordinates.toIndex(), isCheckerWhite, direction, game));
     squaresBetween.pop();
 
     return squaresBetween;
+}
+
+export function indexesAreEqual(index1, index2){
+    const [r1, c1] = index1;
+    const [r2, c2] = index2;
+    return r1 === r2 && c1 === c2;
+}
+
+export function containsIndex(index, indexes = []){
+    return indexes.some(i => indexesAreEqual(index, i));
 }

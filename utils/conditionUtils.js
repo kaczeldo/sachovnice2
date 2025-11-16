@@ -214,11 +214,11 @@ export function thisIsCastleMove(piece, legalMove) {
     // else we gotta check if the move is 
     // a) on the same row
     // b) difference of the cols is two
-    if (kRow !== getRowIndex(legalMove)) {
+    if (kRow !== DomUtils.getRowIndex(legalMove)) {
         return false;
     }
 
-    const colDiff = Math.abs(kCol - (getColumnsIndex(legalMove)));
+    const colDiff = Math.abs(kCol - (DomUtils.getColumnsIndex(legalMove)));
     if (colDiff !== 2) {
         return false;
     }
@@ -226,9 +226,10 @@ export function thisIsCastleMove(piece, legalMove) {
     return true;
 }
 
-export function isCheck(game) {
-    const nrOfCheckingPieces = PieceUtils.getCheckingPieces(Globals.isWhitesTurn, game);
-    if (nrOfCheckingPieces > 0){
+export function isCheck(isWhite, game) {
+    const nrOfCheckingPieces = PieceUtils.getCheckingPieces(isWhite, game);
+    console.log("nr of checking pieces: " + nrOfCheckingPieces.length);
+    if (nrOfCheckingPieces.length > 0){
         return true;
     }
 

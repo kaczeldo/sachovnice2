@@ -10,8 +10,8 @@ export class Coordinates {
         this.y = y;// 0 - 7 for rows
     }
 
-    equals(other) {
-        return this.x === other.x && this.y === other.y;
+    equals(indexes) {
+        return this.y === indexes[0] && this.x === indexes[1];
     }
 
     toString() {

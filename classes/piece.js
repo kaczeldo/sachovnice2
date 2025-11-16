@@ -32,5 +32,9 @@ export class Piece {
         this.type = newType;
     }
 
+    toString(){
+        return "type: " + this.type + ", color: " + this.color + ", coords: " + this.coordinates;
+    }
+
 
 }

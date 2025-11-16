@@ -229,7 +229,7 @@ export function castle(piece, legalMove, game) {
     const isWhite = piece.color === "white";
     const myColor = isWhite ? "white" : "black";
     const [row, col] = piece.coordinates.toIndex();
-    const colDiff = col - getColumnsIndex(legalMove);
+    const colDiff = col - DomUtils.getColumnsIndex(legalMove);
     // find direction
     let direction;
     if (colDiff > 0) {
@@ -282,6 +282,7 @@ export function moveToSquare(piece, legalMove, game) {
         addPieceToRemovedArray(legalMove);
 
         // take the piece on legalMove indexes
+        console.log("the indexes for taken piece - " + newIndexes);
         const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes, game);
         takenPiece.take();
     }
@@ -315,14 +316,18 @@ function updateChessBoard(game) {
     for (let piece of allPieces) {
         const symbol = PieceUtils.getSymbolForPiece(piece);
         const [r, c] = piece.coordinates.toIndex();
-        const onBoard = game.chessBoard[r][c];
+        let onBoard;
+        if (!(piece.wasRemoved)){
+            onBoard = game.chessBoard[r][c];
+        }
+
         if (piece.wasTaken && !(piece.wasRemoved)) {
             if (symbol === onBoard) {
                 game.chessBoard[r][c] = "s";
             }
             piece.coordinates.change(8, 8); // set coordinates to unreal coordinates
             piece.wasRemoved = true;
-        } else if (piece.wasTaken) {
+        } else if (piece.wasRemoved) {
             // do nothing - should be solved
         } else if (symbol !== onBoard) { // then we are working with active pieces
             game.chessBoard[r][c] = symbol;

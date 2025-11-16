@@ -22,8 +22,7 @@ window.onload = function () {
         if (Globals.gameOver) {
             return;
         }
-        Globals.setDomPiecesToPlay(DomUtils.getDOMPieces(game));      
-
+        Globals.setDomPiecesToPlay(DomUtils.getDOMPieces(game));
         if (Globals.domPiecesToPlay.length === 1) {//there is only king to play with
             Globals.setOnlyKingToPlay(true);
         } else {
@@ -39,7 +38,6 @@ window.onload = function () {
         const domPiece = event.target;
         const piece = DomUtils.getPieceFromDOMPiece(domPiece, game);
         const isWhite = piece.color === "white";
-        const opponentColor = isWhite ? "black" : "white";
         const sameColor = isWhite ? "white" : "black";
 
         domPiece.addEventListener("click", function cancelHandler(ev) {
@@ -54,13 +52,12 @@ window.onload = function () {
             friendlyPiece.addEventListener("click", function cancelDiffHandler(ev) {
                 ev.preventDefault();
                 GameUtils.cleanUp(game);
-                startTurn();
-                handlePieceClick({ target: friendlyPiece });
+                startTurn(game);
             }, { once: true });
         }
 
         let legalMoves = [];
-        if (Globals.isWhiteInCheck || Globals.isBlackInCheck) {
+        if ((Globals.isWhitesTurn && Globals.isWhiteInCheck) || (!(Globals.isWhitesTurn) && Globals.isBlackInCheck)) {
             legalMoves = MoveUtils.getLegalCheckMoves(piece, game);
         } else {
             legalMoves = MoveUtils.getLegalMoves(piece, game);
@@ -94,12 +91,12 @@ window.onload = function () {
                 Globals.setIsWhiteInCheck(false);
                 Globals.setIsBlackInCheck(false);
 
-                const nrOfCheckingPieces = ConditionUtils.isCheck(game);
+                const nrOfCheckingPieces = ConditionUtils.isCheck(Globals.isWhitesTurn, game);
 
                 if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
-                    Globals.setIsWhiteInCheck(true);
-                } else if ((!(Globals.isWhitesTurn)) && nrOfCheckingPieces > 0) {
                     Globals.setIsBlackInCheck(true);
+                } else if ((!(Globals.isWhitesTurn)) && nrOfCheckingPieces > 0) {
+                    Globals.setIsWhiteInCheck(true);
                 }
 
                 if (nrOfCheckingPieces >= 2) {
@@ -107,19 +104,14 @@ window.onload = function () {
                 } else {
                     Globals.setIsDoubleCheck(false);
                 }
+                GameUtils.endTurn(game);
 
-                /* instead of what is below, implement endTurn function which will also updat the chess board!
-                Globals.isWhitesTurn = !(Globals.isWhitesTurn);
-
-                cleanUp();
-                */
-               GameUtils.endTurn(game); // TOOODOOO !!!
-
+                console.log("is white in check: " + Globals.isWhiteInCheck);
+                console.log("is black in check: " + Globals.isBlackInCheck);
                 startTurn(game);
             }, { once: true });
         }
     }
-
     startGame();
 
 };
