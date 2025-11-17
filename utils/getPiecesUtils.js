@@ -97,7 +97,6 @@ export function getCheckBlockingPieces(game, checkingPieces) {
     }
     const blockingPieces = [];
     const kingCheckerDiagonal = MoveUtils.getSquaresBetweenKingAndChecker(kingInCheck, checkingPieces[0], game);
-    console.log("Diagonal: " + kingCheckerDiagonal);
     const friendlyPieces = getPieces({ color: currentColor }, game);
 
     for (const piece of friendlyPieces) {
@@ -107,8 +106,6 @@ export function getCheckBlockingPieces(game, checkingPieces) {
 
         const legalMoves = MoveUtils.getLegalMoves(piece, game);
         const intersection = kingCheckerDiagonal.some(i => MoveUtils.containsIndex(i, legalMoves));
-        
-
         if (intersection) {
             blockingPieces.push(piece);
         }

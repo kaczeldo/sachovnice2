@@ -96,7 +96,9 @@ export function getLegalMoves(piece, game) {
             break;
     }
 
-    return legalMoves;
+    const unique = [...new Set(legalMoves.map(([x, y]) => `${x},${y}`))]
+        .map(str => str.split(',').map(Number));
+    return unique;
 }
 
 function getLegalPawnMoves(piece, game) {
@@ -133,7 +135,7 @@ function getLegalPawnMoves(piece, game) {
     // check diagonals
     const topLeftIndexes = getIndexesInDirection(piece, "top-left");
     let topLeftSymbol;
-    if (topLeftIndexes !== null){
+    if (topLeftIndexes !== null) {
         topLeftSymbol = game.chessBoard[topLeftIndexes[0]][topLeftIndexes[1]];
     }
 
@@ -143,10 +145,10 @@ function getLegalPawnMoves(piece, game) {
 
     const topRightIndexes = getIndexesInDirection(piece, "top-right");
     let topRightSymbol;
-    if (topRightIndexes !== null){
+    if (topRightIndexes !== null) {
         topRightSymbol = game.chessBoard[topRightIndexes[0]][topRightIndexes[1]];
     }
-    
+
     if (topRightSymbol && topRightSymbol.includes(oppositeColorSymbol)) {
         legalMoves.push(topRightIndexes);
     }
@@ -327,7 +329,7 @@ function getLegalQueenMoves(piece, game) {
 
     if (isThePiecePinned) {
         let newLegalMoves = legalMoves.filter(
-            legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            legalMove => containsIndex(legalMove, possiblePinnedMovesIndexes)
         );
 
         return newLegalMoves;
@@ -403,7 +405,7 @@ export function getLongRangeMoves(currentIndexes, isWhite, direction, game) {
     }
 
     const nextElementSymbol = game.chessBoard[nextElementIndexes[0]][nextElementIndexes[1]];
-    if (nextElementSymbol == null){
+    if (nextElementSymbol == null) {
         return legalMoves;
     }
 
@@ -761,12 +763,9 @@ export function getLegalCheckMoves(piece, game) {
 
     // now go through legal moves and pick only those which are on the line between attacker and king
     let legalCheckMoves = [];
-
     const isWhite = piece.color === "white";
     const sameColor = Globals.isWhitesTurn ? "white" : "black";
-
     const king = PieceUtils.getPieces({ color: sameColor, type: "king" }, game)[0];
-
     const checkingPieces = PieceUtils.getCheckingPieces(!(isWhite), game);
 
     // if there is different number of checking pieces than 1, return empty array -> invalid state
@@ -775,26 +774,23 @@ export function getLegalCheckMoves(piece, game) {
     }
 
     const checkingPieceIsKnight = checkingPieces[0].type === "knight";
-
-    // in case of knight check AND this piece can take the checking piece
-    if (checkingPieceIsKnight && legalMoves.includes(checkingPieces[0])) {
-        legalCheckMoves.push(checkingPieces[0]);
-        return legalCheckMoves;
-    } else if (checkingPieceIsKnight) {
-        return legalCheckMoves;
-    }
-
-    const squaresBetweenKingAndChecker = getSquaresBetweenKingAndChecker(king, checkingPieces[0], game);
-
-
-    // go through each move and check if it lays on the line between attacker and king. If yes, add it.
-    for (let potentialMove of legalMoves) {
-        if (squaresBetweenKingAndChecker.includes(potentialMove)) {
-            legalCheckMoves.push(potentialMove);
+    if (!(checkingPieceIsKnight)) {
+        const squaresBetweenKingAndChecker = getSquaresBetweenKingAndChecker(king, checkingPieces[0], game);
+        // check for blocking moves
+        for (const blockingMove of squaresBetweenKingAndChecker) {
+            if (containsIndex(blockingMove, legalMoves)) {
+                legalCheckMoves.push(blockingMove);
+            }
         }
     }
 
-    return legalCheckMoves;
+    // check for attacking moves
+    if (containsIndex(checkingPieces[0].coordinates.toIndex(), legalMoves)) {
+        legalCheckMoves.push(checkingPieces[0].coordinates.toIndex());
+    }
+    const unique = [...new Set(legalCheckMoves.map(([x, y]) => `${x},${y}`))]
+        .map(str => str.split(',').map(Number));
+    return unique;
 }
 
 export function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
@@ -833,12 +829,12 @@ export function getSquaresBetweenKingAndChecker(king, checkingPiece, game) {
     return squaresBetween;
 }
 
-export function indexesAreEqual(index1, index2){
+export function indexesAreEqual(index1, index2) {
     const [r1, c1] = index1;
     const [r2, c2] = index2;
     return r1 === r2 && c1 === c2;
 }
 
-export function containsIndex(index, indexes = []){
+export function containsIndex(index, indexes = []) {
     return indexes.some(i => indexesAreEqual(index, i));
 }

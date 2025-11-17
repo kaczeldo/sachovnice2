@@ -56,15 +56,15 @@ export function getColumnsIndex(piece) {
 
 export function getRowIndex(piece) {
     // lets find the index of the row it is actually on.
-    let currentPieceRow = piece.parentElement.parentElement;
-    let currentRowIndex = -1;
+    console.log("why no parents? " + piece.parentElement.className);
+    const currentPieceRow = piece.parentElement.parentElement;
     for (let i = 0; i < Globals.boardRows.length; i++) {
         if (Globals.boardRows[i] == currentPieceRow) {
             return i;
         }
     }
 
-    return currentRowIndex;
+    return null;
 }
 
 /**
@@ -118,13 +118,10 @@ export function getDOMPieces(game) {
 
         // first find the pieces which are giving check
         const checkingPieces = PieceUtils.getCheckingPieces(!(isWhite), game);
-        console.log("The checking pieces: " + checkingPieces[0]);
         // check if this is only one piece -> must be
         if (checkingPieces.length !== 1) {
             return null;
         }
-
-        console.log("I am here");
         // now add pieces which can block the check
         const checkBlockingPieces = PieceUtils.getCheckBlockingPieces(game, checkingPieces);
         if (checkBlockingPieces === null) {

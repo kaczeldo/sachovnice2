@@ -282,12 +282,13 @@ export function moveToSquare(piece, legalMove, game) {
         addPieceToRemovedArray(legalMove);
 
         // take the piece on legalMove indexes
-        console.log("the indexes for taken piece - " + newIndexes);
         const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes, game);
         takenPiece.take();
     }
 
+    console.log("the piece: " + piece + " is about to move to new indexes: " + newIndexes);
     piece.moveTo(newIndexes);
+    
 }
 
 export function endTurn(game) {
@@ -316,6 +317,8 @@ function updateChessBoard(game) {
     for (let piece of allPieces) {
         const symbol = PieceUtils.getSymbolForPiece(piece);
         const [r, c] = piece.coordinates.toIndex();
+        console.log("the piece: " + piece);
+        console.log("its indexes: " + [r, c]);
         let onBoard;
         if (!(piece.wasRemoved)){
             onBoard = game.chessBoard[r][c];

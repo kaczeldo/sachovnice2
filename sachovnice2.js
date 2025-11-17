@@ -65,6 +65,7 @@ window.onload = function () {
 
         // convert legalMoves - which currently are just indexes of legal moves, 
         // to actual dom elements
+        console.log("The legal moves before calling getDOM function: " + legalMoves);
         let legalDomMoves = DomUtils.getDOMElementsFromIndexes(legalMoves);
         // HIGHLIGHT EMPTY-SQUARE MOVES
         legalDomMoves = Ui.highlightMoves(legalDomMoves, game);
@@ -84,6 +85,7 @@ window.onload = function () {
                 } else if (ConditionUtils.thisIsCastleMove(piece, legalMove)) {
                     GameUtils.castle(piece, legalMove, game);
                 } else {
+                    console.log("legal move before the function and its parent: " + legalMove.parentElement.className);
                     GameUtils.moveToSquare(piece, legalMove, game);
                 }
 
@@ -105,9 +107,6 @@ window.onload = function () {
                     Globals.setIsDoubleCheck(false);
                 }
                 GameUtils.endTurn(game);
-
-                console.log("is white in check: " + Globals.isWhiteInCheck);
-                console.log("is black in check: " + Globals.isBlackInCheck);
                 startTurn(game);
             }, { once: true });
         }

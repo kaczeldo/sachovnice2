@@ -228,7 +228,6 @@ export function thisIsCastleMove(piece, legalMove) {
 
 export function isCheck(isWhite, game) {
     const nrOfCheckingPieces = PieceUtils.getCheckingPieces(isWhite, game);
-    console.log("nr of checking pieces: " + nrOfCheckingPieces.length);
     if (nrOfCheckingPieces.length > 0){
         return true;
     }

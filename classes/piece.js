@@ -20,7 +20,9 @@ export class Piece {
     }
 
     moveTo(indexes){
-        this.coordinates = new Coordinates(indexes[1], indexes[0]);
+        console.log("current coordinates: " + this.coordinates.toIndex());
+        this.coordinates.change(indexes[1], indexes[0]);
+        console.log("coordinates after: " + this.coordinates.toIndex());
         this.hasMoved = true;
     }
 
