@@ -50,6 +50,13 @@ export function moveAndPromote(piece, legalMove, game) {
     } else {
         popup = document.getElementById("popup-black");
     }
+    const legalMoveRow = DomUtils.getRowIndex(legalMove);
+    const legalMoveCol = DomUtils.getColumnsIndex(legalMove);
+    const legalMoveSymbol = game.chessBoard[legalMoveRow][legalMoveCol];
+    let thisIsTakingMove = false;
+    if (legalMoveSymbol !== "s"){
+        thisIsTakingMove = true;
+    }
 
     // move the piece to new square
     let squareElement = document.createElement("span");
@@ -59,7 +66,18 @@ export function moveAndPromote(piece, legalMove, game) {
     legalMove.parentElement.appendChild(domPiece);
     legalMove.parentElement.removeChild(legalMove);
 
-    const rect = piece.getBoundingClientRect();
+    // if this was taking move, remove the piece on the place
+    if(thisIsTakingMove){
+        const pieceOnPlace = PieceUtils.getPieceFromIndexes([legalMoveRow, legalMoveCol], game);
+        if (pieceOnPlace === null){
+            return null;
+        }
+        addPieceToRemovedArray(legalMove);
+        pieceOnPlace.take();
+    }
+
+    // UI part
+    const rect = domPiece.getBoundingClientRect();
 
     popup.style.left = `${rect.right + 10}px`;
     popup.style.top = `${rect.top}px`;
@@ -77,12 +95,12 @@ export function moveAndPromote(piece, legalMove, game) {
 
             // FIND THE ACTUAL PAWN
             const maxRow = isWhite ? 0 : 7;
-            const friendlyPawns = PieceUtils.getPieces({ type: "pawn" }, game);
-            let allPawns = document.getElementsByClassName(sameColor + " piece pawn");
+            const friendlyPawns = PieceUtils.getPieces({ color: sameColor, type: "pawn" }, game);
             let thePawn;
-            for (let aPawn of friendlyPawns) {
-                const [pRow, _] = aPawn.coordinates.toIndex();
-                if (pRow === maxRow) {
+            for (const aPawn of friendlyPawns) {
+                const [pRow, _] = aPawn.coordinates.toIndex(); // the indexes at this point are not updated.
+                const increment = isWhite ? -1 : +1;
+                if ((pRow + increment) === maxRow) {
                     thePawn = aPawn;
                     break;
                 }
@@ -120,7 +138,10 @@ export function moveAndPromote(piece, legalMove, game) {
             newDomPiece.src = newSrc;
 
             // replace the pawn with the piece
-            const theDomPawn = DomUtils.getDOMPieceFromPiece(theDomPawn);
+            // but first update the coordinates of the pawn
+            piece.moveTo([legalMoveRow, legalMoveCol]);
+            piece.promote(newPieceType);
+            const theDomPawn = DomUtils.getDOMPieceFromPiece(thePawn);
             theDomPawn.parentElement.appendChild(newDomPiece);
             theDomPawn.parentElement.removeChild(theDomPawn);
             // and 'shrink' it
@@ -129,9 +150,10 @@ export function moveAndPromote(piece, legalMove, game) {
             // and now hide the popup again
             popup.classList.add("hidden");
 
+            /*
             // the only possiblity is that we gave a check to opponent, this we check below:
             // here we will store how many pieces checks the king
-            const nrOfCheckingPieces = isKingInCheck(isWhite);
+            const nrOfCheckingPieces = PieceUtils.getCheckingPieces(isWhite, game);
 
             // the color of potentially checked king
             const checkedKingColor = isWhite ? "black" : "white";
@@ -151,13 +173,8 @@ export function moveAndPromote(piece, legalMove, game) {
             } else if (nrOfCheckingPieces < 2) {
                 Globals.setIsDoubleCheck(false);
             }
-
-            // update the piece / not the DOM one!
-            // legal move indexes - use the move indexes as new coordinates of the piece
-            const legalMoveRow = getRowIndex(legalMove);
-            const legalMoveCol = getColumnsIndex(legalMove);
-            piece.moveTo([legalMoveRow, legalMoveCol]);
-            piece.promote(newPieceType);
+                */
+            
 
         }, { once: true });
     }
@@ -255,7 +272,6 @@ export function castle(piece, legalMove, game) {
 }
 
 export function moveToSquare(piece, legalMove, game) {
-    // this will be useful
     const isWhite = piece.color === "white";
     const oppositeColor = isWhite ? "black" : "white";
     const domPiece = DomUtils.getDOMPieceFromPiece(piece);
@@ -264,15 +280,11 @@ export function moveToSquare(piece, legalMove, game) {
     let squareElement = document.createElement("span");
     squareElement.className = "square";
 
-    // lets check if there is highlighter
     if (legalMove.classList.contains("highlighter")) {
         domPiece.parentElement.appendChild(squareElement);
         domPiece.parentElement.removeChild(domPiece);
         legalMove.parentElement.appendChild(domPiece);
         legalMove.parentElement.removeChild(legalMove);
-        // move the piece:
-
-
     } else if (legalMove.classList.contains(oppositeColor)) {// if it is opponents piece
         domPiece.parentElement.appendChild(squareElement);
         domPiece.parentElement.removeChild(domPiece);
@@ -281,14 +293,10 @@ export function moveToSquare(piece, legalMove, game) {
 
         addPieceToRemovedArray(legalMove);
 
-        // take the piece on legalMove indexes
         const takenPiece = PieceUtils.getPieceFromIndexes(newIndexes, game);
         takenPiece.take();
     }
-
-    console.log("the piece: " + piece + " is about to move to new indexes: " + newIndexes);
     piece.moveTo(newIndexes);
-    
 }
 
 export function endTurn(game) {
@@ -305,7 +313,7 @@ export function endTurn(game) {
     cleanUp(game);
 }
 
-function updateChessBoard(game) {
+export function updateChessBoard(game) {
     /**
      * There are two basic things to handle:
      * 1. Go through all pieces and remove the pieces from the board, which have isTaken set to true
@@ -317,10 +325,8 @@ function updateChessBoard(game) {
     for (let piece of allPieces) {
         const symbol = PieceUtils.getSymbolForPiece(piece);
         const [r, c] = piece.coordinates.toIndex();
-        console.log("the piece: " + piece);
-        console.log("its indexes: " + [r, c]);
         let onBoard;
-        if (!(piece.wasRemoved)){
+        if (!(piece.wasRemoved)) {
             onBoard = game.chessBoard[r][c];
         }
 

@@ -47,14 +47,14 @@ export function pieceIsPinned(piece, game) {
     }
 
     // remove the piece on the board temporarily
-    const pieceSymbol = game.chessBoard[pieceRow, pieceCol];
-    game.chessBoard[pieceRow, pieceCol] = "s";// change it to empty square
+    const pieceSymbol = game.chessBoard[pieceRow][pieceCol];
+    game.chessBoard[pieceRow][pieceCol] = "s";// change it to empty square
 
     // get king long range moves in given direction -> we will check which opposite piece is at the end, if there is one
-    let kingMovesInDirection = MoveUtils.getLongRangeMoves([kingRow, kingCol], isWhite, direction, game);
+    const kingMovesInDirection = MoveUtils.getLongRangeMoves([kingRow, kingCol], isWhite, direction, game);
     if (kingMovesInDirection == null || kingMovesInDirection.length === 0) {
         // do not forget to add the piece back to board!
-        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+        game.chessBoard[pieceRow][pieceCol] = pieceSymbol;
 
         return null;
     }
@@ -62,11 +62,11 @@ export function pieceIsPinned(piece, game) {
     const lastItemIndexes = kingMovesInDirection.at(-1);
     const lastItemSymbol = game.chessBoard[lastItemIndexes[0]][lastItemIndexes[1]];
     const oppositeColorSymbol = isWhite ? "B" : "W";
-    if (!(lastItemSymbol.includes(oppositeColorSymbol))) {// if there is no piece looking through the pice on king
+    if (!(lastItemSymbol.includes(oppositeColorSymbol))) {// if there is no piece looking through the piece on king
         // we know we are not pinned, return null
 
         // do not forget to add the piece back to board!
-        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+        game.chessBoard[pieceRow][pieceCol] = pieceSymbol;
 
         return null;
     }
@@ -78,13 +78,13 @@ export function pieceIsPinned(piece, game) {
         possibleMovesDuringPin = possibleMovesDuringPin.filter(item => !(item[0] === pieceRow && item[1] === pieceCol));
 
         // do not forget to add the piece back to board!
-        game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+        game.chessBoard[pieceRow][pieceCol] = pieceSymbol;
 
         return possibleMovesDuringPin;
     }
 
     // do not forget to add the piece back to board!
-    game.chessBoard[pieceRow, pieceCol] = pieceSymbol;
+    game.chessBoard[pieceRow][pieceCol] = pieceSymbol;
     return null;
 }
 

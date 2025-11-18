@@ -152,10 +152,6 @@ function getLegalPawnMoves(piece, game) {
     if (topRightSymbol && topRightSymbol.includes(oppositeColorSymbol)) {
         legalMoves.push(topRightIndexes);
     }
-    /*
-    tryPushMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-left")), game, oppositeColorSymbol);
-    tryPushMove(legalMoves, safeGetDirection(piece, p => getIndexesInDirection(p, "top-right")), game, oppositeColorSymbol);
-    */
 
     // check en passant
     // get element on left
@@ -198,11 +194,9 @@ function getLegalPawnMoves(piece, game) {
     }
 
     if (isPinned) {
-        let newLegalMoves = legalMoves.filter(
-            legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+        return legalMoves.filter(
+            m => containsIndex(m, possiblePinnedMovesIndexes)
         );
-
-        return newLegalMoves;
     }
 
     return legalMoves;
@@ -235,7 +229,7 @@ function getLegalBishopMoves(piece, game) {
     let legalMoves = [];
     const isWhite = piece.color === "white";
     // before we start checking normal moves, check if you are not pinned
-    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
+    const possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     let isThePiecePinned = false;
     if (possiblePinnedMovesIndexes !== null) {
         isThePiecePinned = true;
@@ -255,9 +249,8 @@ function getLegalBishopMoves(piece, game) {
 
     if (isThePiecePinned) {
         let newLegalMoves = legalMoves.filter(
-            legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+            m => containsIndex(m, possiblePinnedMovesIndexes)
         );
-
         return newLegalMoves;
     }
 
@@ -268,7 +261,7 @@ function getLegalRookMoves(piece, game) {
     let legalMoves = [];
     const isWhite = piece.color === "white";
     // before we start checking normal moves, check if you are not pinned
-    let possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
+    const possiblePinnedMovesIndexes = ConditionUtils.pieceIsPinned(piece, game);
     let isThePiecePinned = false;
     if (possiblePinnedMovesIndexes !== null) {
         isThePiecePinned = true;
@@ -287,11 +280,9 @@ function getLegalRookMoves(piece, game) {
     legalMoves.push(...rightMoves);
 
     if (isThePiecePinned) {
-        let newLegalMoves = legalMoves.filter(
-            legalMove => possiblePinnedMovesIndexes.includes(legalMove)
+        return legalMoves.filter(
+            m => containsIndex(m, possiblePinnedMovesIndexes)
         );
-
-        return newLegalMoves;
     }
 
     return legalMoves;
@@ -328,11 +319,9 @@ function getLegalQueenMoves(piece, game) {
     legalMoves.push(...rightMoves);
 
     if (isThePiecePinned) {
-        let newLegalMoves = legalMoves.filter(
-            legalMove => containsIndex(legalMove, possiblePinnedMovesIndexes)
+        return legalMoves.filter(
+            m => containsIndex(m, possiblePinnedMovesIndexes)
         );
-
-        return newLegalMoves;
     }
 
     return legalMoves;
@@ -464,7 +453,7 @@ export function getDefendingMoves(defender, game) {
             break;
     }
 
-    return defendingMoves.filter(m => isFriendlyPiece(possibleChecker, m, game));
+    return defendingMoves.filter(m => isFriendlyPiece(defender, m, game));
 }
 
 function isFriendlyPiece(piece, indexes, game) {

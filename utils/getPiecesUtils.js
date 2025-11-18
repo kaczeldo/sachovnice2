@@ -54,10 +54,11 @@ export function getCheckingPieces(isWhite, game) {
     const oppositeColor = isWhite ? "black" : "white";
     const oponentsKing = getPieces({ color: oppositeColor, type: "king" }, game)[0];
     const friendlyPieces = getPieces({ color: sameColor }, game);
-
     let pieceAttackingMoves;
-    for (let friendlyPiece of friendlyPieces) {
+    for (const friendlyPiece of friendlyPieces) {
         pieceAttackingMoves = MoveUtils.getAttackingMoves(friendlyPiece, game) || [];
+        console.log("checking this piece: " + friendlyPiece);
+        console.log("its attacking moves are: " + pieceAttackingMoves);
         if (pieceAttackingMoves.some(m => oponentsKing.coordinates.equals(m))) {
             checkingPieces.push(friendlyPiece);
         }

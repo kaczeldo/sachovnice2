@@ -85,7 +85,6 @@ window.onload = function () {
                 } else if (ConditionUtils.thisIsCastleMove(piece, legalMove)) {
                     GameUtils.castle(piece, legalMove, game);
                 } else {
-                    console.log("legal move before the function and its parent: " + legalMove.parentElement.className);
                     GameUtils.moveToSquare(piece, legalMove, game);
                 }
 
@@ -93,7 +92,9 @@ window.onload = function () {
                 Globals.setIsWhiteInCheck(false);
                 Globals.setIsBlackInCheck(false);
 
-                const nrOfCheckingPieces = ConditionUtils.isCheck(Globals.isWhitesTurn, game);
+                // update the board before checking
+                GameUtils.updateChessBoard(game);
+                const nrOfCheckingPieces = PieceUtils.getCheckingPieces(isWhite, game);
 
                 if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
                     Globals.setIsBlackInCheck(true);
