@@ -63,6 +63,7 @@ export function getCheckingPieces(isWhite, game) {
             checkingPieces.push(friendlyPiece);
         }
     }
+    console.log("The checking pieces are: " + checkingPieces);
 
     return checkingPieces;
 }

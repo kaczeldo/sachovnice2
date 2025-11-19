@@ -334,7 +334,7 @@ function getLegalKingMoves(piece, game) {
     const sameColor = isWhite ? "white" : "black";
     const oppositeColorSymbol = isWhite ? "B" : "W";
 
-    let directions = ["front", "top-right", "right", "bottom-right", "back", "bottom-left", "left", "top-left"];
+    const directions = ["front", "top-right", "right", "bottom-right", "back", "bottom-left", "left", "top-left"];
     let nextElement;
     for (let direction of directions) {
         nextElement = getIndexesInDirection(piece, direction);
@@ -345,7 +345,7 @@ function getLegalKingMoves(piece, game) {
             nextElementSymbol = game.chessBoard[nextElement[0]][nextElement[1]];
         }
 
-        if (nextElementSymbol === "s" && !(ConditionUtils.isAttacked(nextElement, !(isWhite), game))) {
+        if (nextElementSymbol === "s" && !(ConditionUtils.isAttackedWithoutKing(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
         } else if (nextElementSymbol.includes(oppositeColorSymbol) && !(ConditionUtils.isDefended(nextElement, !(isWhite), game))) {
             possibleMoves.push(nextElement);
@@ -372,13 +372,13 @@ function getLegalKingMoves(piece, game) {
         // CHECKMATE
         if (isWhite && Globals.isWhiteInCheck) {
             Ui.updateStatusBar("CHECKMATE!! " + oppositeColor + " has checkmated the " + sameColor + "! GAME OVER");
-        } else if (!(isWhite) && isBlackKingInCheck) {
+        } else if (!(isWhite) && Globals.isBlackInCheck) {
             Ui.updateStatusBar("CHECKMATE!! " + oppositeColor + " has checkmated the " + sameColor + "! GAME OVER");
         } else {//PAT
             Ui.updateStatusBar("PAT!! It is a draw at the end.");
         }
 
-        Globals.gameOver = true;
+        Globals.setGameOver(true);
     }
 
     return possibleMoves;
@@ -609,18 +609,12 @@ function getPawnMoves(piece, game) {
     // check diagonals
     const topLeft = getIndexesInDirection(piece, "top-left");
     if (topLeft !== null) {
-        const topLeftSymbol = game.chessBoard[topLeft[0]][topLeft[1]];
-        if (topLeftSymbol.includes("W") || topLeftSymbol.includes("B")) {
-            theMoves.push(topLeft);
-        }
+        theMoves.push(topLeft);
     }
 
     const topRight = getIndexesInDirection(piece, "top-right");
     if (topRight !== null) {
-        const topRightSymbol = game.chessBoard[topRight[0]][topRight[1]];
-        if (topRightSymbol.includes("W") || topRightSymbol.includes("B")) {
-            theMoves.push(topRight);
-        }
+        theMoves.push(topRight);
     }
 
     // check en passant - NO, we do not need it. 
@@ -827,3 +821,4 @@ export function indexesAreEqual(index1, index2) {
 export function containsIndex(index, indexes = []) {
     return indexes.some(i => indexesAreEqual(index, i));
 }
+

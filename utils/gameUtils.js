@@ -54,7 +54,7 @@ export function moveAndPromote(piece, legalMove, game) {
     const legalMoveCol = DomUtils.getColumnsIndex(legalMove);
     const legalMoveSymbol = game.chessBoard[legalMoveRow][legalMoveCol];
     let thisIsTakingMove = false;
-    if (legalMoveSymbol !== "s"){
+    if (legalMoveSymbol !== "s") {
         thisIsTakingMove = true;
     }
 
@@ -67,9 +67,9 @@ export function moveAndPromote(piece, legalMove, game) {
     legalMove.parentElement.removeChild(legalMove);
 
     // if this was taking move, remove the piece on the place
-    if(thisIsTakingMove){
+    if (thisIsTakingMove) {
         const pieceOnPlace = PieceUtils.getPieceFromIndexes([legalMoveRow, legalMoveCol], game);
-        if (pieceOnPlace === null){
+        if (pieceOnPlace === null) {
             return null;
         }
         addPieceToRemovedArray(legalMove);
@@ -149,33 +149,26 @@ export function moveAndPromote(piece, legalMove, game) {
 
             // and now hide the popup again
             popup.classList.add("hidden");
+            console.log("The piece at the end of poromotion: " + piece);
 
-            /*
-            // the only possiblity is that we gave a check to opponent, this we check below:
-            // here we will store how many pieces checks the king
-            const nrOfCheckingPieces = PieceUtils.getCheckingPieces(isWhite, game);
+            // update the board before checking
+            GameUtils.updateChessBoard(game);
+            const nrOfCheckingPieces = (PieceUtils.getCheckingPieces(isWhite, game)).length;
 
-            // the color of potentially checked king
-            const checkedKingColor = isWhite ? "black" : "white";
-            // below, based on number of checking pieces and color, we raise the flag
-            if (checkedKingColor === "white" && nrOfCheckingPieces > 0) {
-                Globals.setIsWhiteInCheck(true);
-            } else if (checkedKingColor === "black" && nrOfCheckingPieces > 0) {
+            if (Globals.isWhitesTurn && nrOfCheckingPieces > 0) {
                 Globals.setIsBlackInCheck(true);
-            } else if (checkedKingColor === "white" && nrOfCheckingPieces === 0) {
-                Globals.setIsWhiteInCheck(false);
-            } else if (checkedKingColor === "black" && nrOfCheckingPieces === 0) {
-                Globals.setIsBlackInCheck(false);
+            } else if ((!(Globals.isWhitesTurn)) && nrOfCheckingPieces > 0) {
+                Globals.setIsWhiteInCheck(true);
             }
 
             if (nrOfCheckingPieces >= 2) {
                 Globals.setIsDoubleCheck(true);
-            } else if (nrOfCheckingPieces < 2) {
+            } else {
                 Globals.setIsDoubleCheck(false);
             }
-                */
-            
 
+            GameUtils.endTurn(game);
+            startTurn(game);
         }, { once: true });
     }
 }
@@ -388,4 +381,25 @@ function showBoard(game) {
         }
         console.log(row);
     }
+}
+
+export function startTurn(game) {
+    if (Globals.gameOver) {
+        return;
+    }
+    Globals.setDomPiecesToPlay(DomUtils.getDOMPieces(game));
+    if (Globals.domPiecesToPlay.length === 1) {//there is only king to play with
+        Globals.setOnlyKingToPlay(true);
+    } else {
+        Globals.setOnlyKingToPlay(false);
+    }
+
+    for (let domPiece of Globals.domPiecesToPlay) {
+        domPiece.addEventListener("click", (event) => Ui.handlePieceClick(event, game), { once: true });
+    }
+}
+
+export function startGame() {
+    let myGame = new Game();
+    GameUtils.startTurn(myGame);
 }

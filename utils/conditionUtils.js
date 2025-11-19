@@ -101,13 +101,30 @@ export function isAttacked(indexes, isWhite, game) {
     // go through each piece
     for (let piece of attackerPieces) {
         // get its legal moves
-        let pieceLegalMoves = MoveUtils.getAttackingMoves(piece, game);
-        if (pieceLegalMoves.includes(indexes)) {
+        const pieceAttackingMoves = MoveUtils.getAttackingMoves(piece, game);
+        console.log("checking this piece: " + piece);
+        console.log("its attacking moves are: " + pieceAttackingMoves);
+        if (MoveUtils.containsIndex(indexes, pieceAttackingMoves)){
             return true;
         }
     }
 
     return false;
+}
+
+export function isAttackedWithoutKing(index, isWhite, game){
+    // first remove the king from the Chess Board
+    const oppositeColor = isWhite ? "black" : "white";
+    const oponentKing = PieceUtils.getPieces({color: oppositeColor, type: "king"}, game)[0];
+    const [kRow, kCol] = oponentKing.coordinates.toIndex();
+    const kingSymbol = game.chessBoard[kRow][kCol];
+    game.chessBoard[kRow][kCol] = "s";
+    // call normal function
+    console.log("checking this index: " + index);
+    const isAttBool = isAttacked(index, isWhite, game);
+    // return king to board
+    game.chessBoard[kRow][kCol] = kingSymbol;
+    return isAttBool;
 }
 
 export function isDefended(indexes, isWhite, game) {
@@ -116,8 +133,8 @@ export function isDefended(indexes, isWhite, game) {
     const friendlyPieces = PieceUtils.getPieces({ color: color }, game);
 
     for (let piece of friendlyPieces) {
-        let pieceDefendingMoves = MoveUtils.getDefendingMoves(piece, game);
-        if (pieceDefendingMoves.includes(indexes)) {
+        const pieceDefendingMoves = MoveUtils.getDefendingMoves(piece, game);
+        if (MoveUtils.containsIndex(indexes, pieceDefendingMoves)){
             return true;
         }
     }
