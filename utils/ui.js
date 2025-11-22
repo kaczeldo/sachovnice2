@@ -24,7 +24,7 @@ export function highlightMoves(legalMoves) {
     for (let legalMove of legalMoves) {
         if (legalMove.classList.contains("square")) {
             let highlighter = document.createElement("img");
-            highlighter.src = "./highlighter.svg";
+            highlighter.src = "./images/highlighter.svg";
             highlighter.className = "highlighter";
 
             legalMove.parentElement.appendChild(highlighter);

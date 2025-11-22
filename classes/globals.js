@@ -8,7 +8,6 @@ export let isBlackInCheck = false;
 export let isDoubleCheck = false;
 export const boardRows = document.getElementsByClassName("board-row");
 
-// You can also export functions to modify them safely
 export function resetGameFlags() {
   thereIsOnlyKingToPlayWith = false;
   isWhitesTurn = true;

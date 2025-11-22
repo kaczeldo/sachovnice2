@@ -120,16 +120,16 @@ export function moveAndPromote(piece, legalMove, game) {
             const imageType = selectedPiece.getAttribute('src');
             if (imageType.includes("queen")) {
                 newPieceType = "queen";
-                newSrc = `./queen_${sameColor}.svg`;
+                newSrc = `./images/queen_${sameColor}.svg`;
             } else if (imageType.includes("rook")) {
                 newPieceType = "rook";
-                newSrc = `./rook_${sameColor}.svg`;
+                newSrc = `./images/rook_${sameColor}.svg`;
             } else if (imageType.includes("knight")) {
                 newPieceType = "knight";
-                newSrc = `./knight_${sameColor}.svg`;
+                newSrc = `./images/knight_${sameColor}.svg`;
             } else if (imageType.includes("bishop")) {
                 newPieceType = "bishop";
-                newSrc = `./bishop_${sameColor}.svg`;
+                newSrc = `./images/bishop_${sameColor}.svg`;
             }
 
             // CREATE NEW PIECE
